@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Company {
+  id             String         @id @default(uuid())
+  name           String
+  slug           String         @unique
+  description    String
+  profileImage   String
+  bannerImage    String
+  phone          String[]
+  whatsapp       String
+  minimumOrder   Float
+  address        Json
+  businessHours  Json
+  paymentMethods String[]
+  isOpen         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  categories     Category[]
+  products       Product[]
+  orders         Order[]
+  users          User[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   // 'admin' | 'company_owner'
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  companyId String
+  name      String
+  order     Int
+  company   Company   @relation(fields: [companyId], references: [id])
+  products  Product[]
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  companyId        String
+  categoryId       String
+  name             String
+  description      String
+  image            String
+  price            Float
+  promotionalPrice Float?
+  isPromotion      Boolean  @default(false)
+  productType      String
+  flavors          Json?
+  comboConfig      Json?
+  isAvailable      Boolean  @default(true)
+  company          Company  @relation(fields: [companyId], references: [id])
+  category         Category @relation(fields: [categoryId], references: [id])
+}
+
+model Order {
+  id            String   @id @default(uuid())
+  companyId     String
+  customerName  String
+  customerPhone String
+  items         Json
+  total         Float
+  status        String
+  paymentMethod String
+  notes         String?
+  createdAt     DateTime @default(now())
+  company       Company  @relation(fields: [companyId], references: [id])
+}
