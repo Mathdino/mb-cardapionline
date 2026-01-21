@@ -1,17 +1,28 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import Image from "next/image";
 import {
-  getOrdersByCompany,
   formatCurrency,
   orderStatusLabels,
   orderStatusColors,
 } from "@/lib/mock-data";
 import { TrendingUp, ShoppingBag, Package, Calendar } from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from "recharts";
+import { getOrders } from "@/app/actions/order";
+import { Order } from "@/lib/types";
 
 type FilterPeriod = "week" | "month" | "year" | "custom";
+
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
 export default function FinanceiroPage() {
   const { getCompany } = useAuth();
@@ -19,8 +30,30 @@ export default function FinanceiroPage() {
   const [period, setPeriod] = useState<FilterPeriod>("month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const orders = getOrdersByCompany(company.id);
+  useEffect(() => {
+    async function fetchOrders() {
+      if (company?.id) {
+        setIsLoading(true);
+        try {
+          const data = await getOrders(company.id);
+          const parsedOrders = data.map((order: any) => ({
+            ...order,
+            createdAt: new Date(order.createdAt),
+            items: order.items as any,
+          }));
+          setOrders(parsedOrders);
+        } catch (error) {
+          console.error("Failed to fetch orders", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+    fetchOrders();
+  }, [company?.id]);
 
   const filteredOrders = useMemo(() => {
     const now = new Date();
@@ -49,7 +82,10 @@ export default function FinanceiroPage() {
         startDate = new Date(0);
     }
 
+    // Only include delivered orders for financial calculations
     return orders.filter((order) => {
+      if (order.status !== "delivered") return false;
+
       const orderDate = new Date(order.createdAt);
       return orderDate >= startDate && orderDate <= endDate;
     });
@@ -59,7 +95,8 @@ export default function FinanceiroPage() {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const delivered = filteredOrders.filter((o) => o.status === "delivered");
+    // Since filteredOrders already only contains delivered orders
+    const delivered = filteredOrders;
     const totalRevenue = delivered.reduce((sum, o) => sum + o.total, 0);
     const averageOrder =
       delivered.length > 0 ? totalRevenue / delivered.length : 0;
@@ -85,7 +122,7 @@ export default function FinanceiroPage() {
 
     const topProducts = Object.entries(productSales)
       .map(([id, data]) => ({ id, ...data }))
-      .sort((a, b) => b.revenue - a.revenue)
+      .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 5);
 
     return {
@@ -238,7 +275,7 @@ export default function FinanceiroPage() {
       </div>
 
       {/* Top Products */}
-      <div className="bg-card border rounded-xl">
+      <div className="bg-card border rounded-xl flex flex-col">
         <div className="p-4 border-b">
           <h2 className="font-bold text-foreground">Produtos Mais Vendidos</h2>
         </div>
@@ -248,40 +285,38 @@ export default function FinanceiroPage() {
             Nenhuma venda no período selecionado
           </p>
         ) : (
-          <div className="divide-y">
-            {stats.topProducts.map((product, index) => (
-              <div
-                key={product.id}
-                className="flex items-center justify-between p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      index === 0
-                        ? "bg-yellow-100 text-yellow-700"
-                        : index === 1
-                          ? "bg-gray-100 text-gray-700"
-                          : index === 2
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-secondary text-muted-foreground"
-                    }`}
-                  >
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      {product.name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {product.quantity} vendidos
-                    </p>
-                  </div>
-                </div>
-                <span className="font-bold text-foreground">
-                  {formatCurrency(product.revenue)}
-                </span>
-              </div>
-            ))}
+          <div className="p-4 h-[400px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.topProducts}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
+                  }
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="quantity"
+                  nameKey="name"
+                >
+                  {stats.topProducts.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <RechartsTooltip
+                  formatter={(value: number, name: string, item: any) => [
+                    `${value} un. - ${formatCurrency(item.payload.revenue)}`,
+                    name,
+                  ]}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         )}
       </div>

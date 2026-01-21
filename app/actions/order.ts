@@ -3,13 +3,7 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-interface OrderItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  details?: string;
-}
+import { OrderItem, PaymentMethod } from "@/lib/types";
 
 interface CreateOrderData {
   companyId: string;
@@ -17,8 +11,21 @@ interface CreateOrderData {
   customerPhone: string;
   items: OrderItem[];
   total: number;
-  paymentMethod: string;
+  paymentMethod: PaymentMethod;
   notes?: string;
+}
+
+function generateOrderId(): string {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const numbers = "0123456789";
+  let result = "";
+  for (let i = 0; i < 4; i++) {
+    result += letters.charAt(Math.floor(Math.random() * letters.length));
+  }
+  for (let i = 0; i < 4; i++) {
+    result += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  }
+  return result;
 }
 
 export async function createOrder(data: CreateOrderData) {
@@ -42,26 +49,99 @@ export async function createOrder(data: CreateOrderData) {
       return { success: false, error: "Company not found" };
     }
 
-    // Create order
-    const order = await prisma.order.create({
-      data: {
-        companyId,
-        customerName,
-        customerPhone,
-        items: items as any, // Prisma handles JSON
-        total,
-        status: "pending",
-        paymentMethod,
-        notes: notes || "",
-      },
-    });
+    if (!company.isOpen) {
+      return {
+        success: false,
+        error: "O restaurante está fechado no momento.",
+      };
+    }
+
+    // Create order with custom ID
+    let orderId = generateOrderId();
+    let order;
+    let retries = 0;
+
+    while (retries < 3) {
+      try {
+        order = await prisma.order.create({
+          data: {
+            id: orderId,
+            companyId,
+            customerName,
+            customerPhone,
+            items: items as any, // Prisma handles JSON
+            total,
+            status: "pending",
+            paymentMethod,
+            notes: notes || "",
+          },
+        });
+        break;
+      } catch (e: any) {
+        // P2002 is Unique constraint failed
+        if (e.code === "P2002") {
+          orderId = generateOrderId();
+          retries++;
+          continue;
+        }
+        throw e;
+      }
+    }
+
+    if (!order) {
+      throw new Error("Failed to generate unique Order ID");
+    }
 
     // Revalidate dashboard
     revalidatePath("/empresa/dashboard");
+    revalidatePath("/empresa/dashboard/pedidos");
 
     return { success: true, order };
   } catch (error) {
     console.error("Error creating order:", error);
     return { success: false, error: "Failed to create order" };
+  }
+}
+
+export async function getOrders(companyId: string) {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { companyId },
+      orderBy: { createdAt: "desc" },
+    });
+    return orders;
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return [];
+  }
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  companyId: string,
+  newStatus: any, // Using any to avoid import issues if OrderStatus isn't exported, but it should be
+) {
+  try {
+    // Verify order belongs to company
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order || order.companyId !== companyId) {
+      return { success: false, error: "Order not found or access denied" };
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: newStatus },
+    });
+
+    revalidatePath("/empresa/dashboard");
+    revalidatePath("/empresa/dashboard/pedidos");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    return { success: false, error: "Failed to update order status" };
   }
 }

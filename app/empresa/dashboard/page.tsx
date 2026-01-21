@@ -209,7 +209,7 @@ export default function DashboardPage() {
           className="p-4 bg-card border rounded-xl hover:bg-secondary/50 transition-colors text-center"
         >
           <Tag className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-          <p className="font-medium text-foreground">Promoções</p>
+          <p className="font-medium text-foreground">Promoções e Combos</p>
         </Link>
 
         <Link

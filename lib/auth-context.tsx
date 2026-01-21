@@ -18,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   getCompany: () => Company | null;
+  updateCompanyData: (company: Company) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

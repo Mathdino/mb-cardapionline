@@ -25,6 +25,7 @@ interface CartContextType {
     selectedFlavor?: ProductFlavor,
     selectedComboItems?: SelectedComboItem[],
     removedIngredients?: string[],
+    selectedFlavors?: ProductFlavor[],
   ) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
@@ -52,14 +53,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
       selectedFlavor?: ProductFlavor,
       selectedComboItems?: SelectedComboItem[],
       removedIngredients?: string[],
+      selectedFlavors?: ProductFlavor[],
     ) => {
       setItems((prev) => {
-        // Simple check for existing item - for combos/flavors this might need to be more strict
-        // Currently treating each combo configuration as unique if it has combo items
+        const effectiveFlavors =
+          selectedFlavors || (selectedFlavor ? [selectedFlavor] : []);
+
         const existingIndex = prev.findIndex(
           (item) =>
             item.product.id === product.id &&
-            item.selectedFlavor?.id === selectedFlavor?.id &&
+            // Compare flavors
+            ((!item.selectedFlavor &&
+              (!item.selectedFlavors || item.selectedFlavors.length === 0) &&
+              effectiveFlavors.length === 0) ||
+              (item.selectedFlavor &&
+                effectiveFlavors.length === 1 &&
+                item.selectedFlavor.id === effectiveFlavors[0].id) ||
+              (item.selectedFlavors &&
+                item.selectedFlavors.length === effectiveFlavors.length &&
+                item.selectedFlavors.every((f) =>
+                  effectiveFlavors.some((ef) => ef.id === f.id),
+                ))) &&
             // If it has combo items, we always add as new item for simplicity unless deep comparison
             !item.selectedComboItems &&
             !selectedComboItems &&
@@ -73,9 +87,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ? product.promotionalPrice
             : product.price;
 
-        if (selectedFlavor) {
-          unitPrice += selectedFlavor.priceModifier;
-        }
+        effectiveFlavors.forEach((f) => {
+          unitPrice += f.priceModifier;
+        });
 
         if (selectedComboItems) {
           selectedComboItems.forEach((comboItem) => {
@@ -99,7 +113,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
             cartItemId: crypto.randomUUID(),
             product,
             quantity,
-            selectedFlavor,
+            selectedFlavor:
+              effectiveFlavors.length === 1 ? effectiveFlavors[0] : undefined,
+            selectedFlavors: effectiveFlavors,
             selectedComboItems,
             removedIngredients,
             subtotal,
@@ -129,7 +145,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 ? item.product.promotionalPrice
                 : item.product.price;
 
-            if (item.selectedFlavor) {
+            if (item.selectedFlavors && item.selectedFlavors.length > 0) {
+              item.selectedFlavors.forEach((f) => {
+                unitPrice += f.priceModifier;
+              });
+            } else if (item.selectedFlavor) {
               unitPrice += item.selectedFlavor.priceModifier;
             }
 
@@ -179,7 +199,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           : item.product.price;
 
         message += `- ${item.quantity}x ${item.product.name}`;
-        if (item.selectedFlavor) {
+        if (item.selectedFlavors && item.selectedFlavors.length > 0) {
+          message += ` (${item.selectedFlavors.map((f) => f.name).join(", ")})`;
+        } else if (item.selectedFlavor) {
           message += ` (${item.selectedFlavor.name})`;
         }
 

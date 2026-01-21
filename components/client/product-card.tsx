@@ -54,9 +54,22 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex flex-col items-end gap-0.5 mt-2">
           {product.productType === "flavors" && (
-            <span className="text-xs text-muted-foreground">a partir de</span>
+            <>
+              <span className="text-xs text-muted-foreground">a partir de</span>
+              {product.flavors &&
+                !Array.isArray(product.flavors) &&
+                product.flavors.max > 1 && (
+                  <span className="text-[10px] font-medium text-primary">
+                    {product.flavors.min === product.flavors.max
+                      ? `Escolha ${product.flavors.max} sabores`
+                      : product.flavors.min > 0
+                        ? `${product.flavors.min} a ${product.flavors.max} sabores`
+                        : `Até ${product.flavors.max} sabores`}
+                  </span>
+                )}
+            </>
           )}
           {product.productType === "combo" && displayPrice === 0 ? (
             <span className="text-sm font-medium text-muted-foreground">

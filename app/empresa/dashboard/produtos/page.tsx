@@ -57,6 +57,8 @@ function ProdutosContent() {
     image: "",
     ingredients: [] as string[],
     flavors: [] as { id: string; name: string; price: string }[],
+    minFlavors: "1",
+    maxFlavors: "1",
     comboConfig: {
       maxItems: "1",
       options: [] as { id: string; name: string; price: string }[],
@@ -200,7 +202,14 @@ function ProdutosContent() {
               ...f,
               price: f.priceModifier.toString(),
             }))
-          : [],
+          : product.flavors?.options
+            ? product.flavors.options.map((f: any) => ({
+                ...f,
+                price: f.priceModifier.toString(),
+              }))
+            : [],
+        minFlavors: product.flavors?.min?.toString() || "1",
+        maxFlavors: product.flavors?.max?.toString() || "1",
         comboConfig: product.comboConfig
           ? {
               maxItems: product.comboConfig.maxItems.toString(),
@@ -210,8 +219,25 @@ function ProdutosContent() {
                     price: o.priceModifier.toString(),
                   }))
                 : [],
+              groups: Array.isArray(product.comboConfig.groups)
+                ? product.comboConfig.groups.map((g: any) => ({
+                    id: g.id,
+                    title: g.title,
+                    type: g.type,
+                    min: g.min.toString(),
+                    max: g.max.toString(),
+                    productIds: g.productIds || [],
+                    options: g.options
+                      ? g.options.map((o: any) => ({
+                          id: o.id,
+                          name: o.name,
+                          price: (o.priceModifier || o.price || 0).toString(),
+                        }))
+                      : [],
+                  }))
+                : [],
             }
-          : { maxItems: "1", options: [] },
+          : { maxItems: "1", options: [], groups: [] },
       });
     } else {
       setEditingProduct(null);
@@ -226,7 +252,9 @@ function ProdutosContent() {
         image: "",
         ingredients: [],
         flavors: [],
-        comboConfig: { maxItems: "1", options: [] },
+        minFlavors: "1",
+        maxFlavors: "1",
+        comboConfig: { maxItems: "1", options: [], groups: [] },
       });
     }
     setIsModalOpen(true);
@@ -253,7 +281,7 @@ function ProdutosContent() {
   const handleCropComplete = async (croppedImageBlob: Blob) => {
     setIsUploading(true);
     const formData = new FormData();
-    formData.append("file", croppedImageBlob);
+    formData.append("file", croppedImageBlob, "image.png");
 
     try {
       const response = await fetch("/api/upload", {
@@ -293,11 +321,15 @@ function ProdutosContent() {
       ingredients: formData.ingredients,
       flavors:
         formData.productType === "flavors"
-          ? formData.flavors.map((f) => ({
-              id: f.id,
-              name: f.name,
-              priceModifier: parseFloat(f.price),
-            }))
+          ? {
+              min: parseInt(formData.minFlavors) || 0,
+              max: parseInt(formData.maxFlavors) || 0,
+              options: formData.flavors.map((f) => ({
+                id: f.id,
+                name: f.name,
+                priceModifier: parseFloat(f.price),
+              })),
+            }
           : null,
       comboConfig:
         formData.productType === "combo"
@@ -461,7 +493,11 @@ function ProdutosContent() {
                   {product.name}
                 </h3>
                 <div className="flex flex-col items-end">
-                  {product.promotionalPrice ? (
+                  {product.productType === "combo" ? (
+                    <span className="font-bold text-primary whitespace-nowrap">
+                      Variável
+                    </span>
+                  ) : product.promotionalPrice ? (
                     <>
                       <span className="text-xs text-muted-foreground line-through">
                         {formatCurrency(product.price)}
@@ -612,45 +648,6 @@ function ProdutosContent() {
                       min="0"
                       required
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Preço Promocional (R$)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.promotionalPrice}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          promotionalPrice: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.isPromotion}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            isPromotion: e.target.checked,
-                          }))
-                        }
-                        className="text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-foreground">
-                        Habilitar Promoção
-                      </span>
-                    </label>
                   </div>
                 </div>
 
@@ -814,6 +811,44 @@ function ProdutosContent() {
                     <div className="mt-4 p-4 bg-secondary/50 rounded-lg border">
                       <h4 className="font-medium text-sm mb-3">Sabores</h4>
 
+                      {/* Configuração de Quantidade */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Mínimo de Sabores
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.minFlavors}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                minFlavors: e.target.value,
+                              }))
+                            }
+                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-muted-foreground mb-1 block">
+                            Máximo de Sabores
+                          </label>
+                          <input
+                            type="number"
+                            value={formData.maxFlavors}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                maxFlavors: e.target.value,
+                              }))
+                            }
+                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                            min="1"
+                          />
+                        </div>
+                      </div>
+
                       {/* Lista de Sabores Adicionados */}
                       {formData.flavors.length > 0 && (
                         <div className="space-y-2 mb-4">
@@ -907,7 +942,7 @@ function ProdutosContent() {
                       </p>
 
                       <div className="space-y-4">
-                        {formData.comboConfig.groups.map(
+                        {formData.comboConfig?.groups?.map(
                           (group, groupIndex) => (
                             <div
                               key={group.id}

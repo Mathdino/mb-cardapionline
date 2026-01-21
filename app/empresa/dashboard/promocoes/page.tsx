@@ -348,7 +348,7 @@ export default function PromocoesPage() {
   const handleCropComplete = async (croppedImageBlob: Blob) => {
     setIsUploading(true);
     const formData = new FormData();
-    formData.append("file", croppedImageBlob);
+    formData.append("file", croppedImageBlob, "image.png");
 
     try {
       const response = await fetch("/api/upload", {
@@ -423,7 +423,7 @@ export default function PromocoesPage() {
                             {combo.description}
                           </p>
                           <div className="mt-2 text-xl font-bold text-primary">
-                            {formatCurrency(combo.price)}
+                            Variável
                           </div>
                         </div>
                         <div className="flex items-center gap-1">

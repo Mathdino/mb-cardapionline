@@ -15,6 +15,8 @@ import { useCart } from "@/lib/cart-context";
 import { formatCurrency, paymentMethodLabels, formatPhone } from "@/lib/utils";
 import type { Company, PaymentMethod } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { createOrder } from "@/app/actions/order";
+import { OrderItem } from "@/lib/types";
 
 interface CartSheetProps {
   company: Company;
@@ -39,6 +41,11 @@ export function CartSheet({ company }: CartSheetProps) {
   } = useCart();
 
   const handleCheckout = async () => {
+    if (!company.isOpen) {
+      alert("O restaurante está fechado no momento.");
+      return;
+    }
+
     if (!customerName.trim()) {
       alert("Por favor, informe seu nome");
       return;
@@ -56,25 +63,58 @@ export function CartSheet({ company }: CartSheetProps) {
 
     setIsSubmitting(true);
 
-    // Simulate delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Create order items
+      const orderItems: OrderItem[] = items.map((item) => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        unitPrice: item.subtotal / item.quantity,
+        subtotal: item.subtotal,
+        selectedFlavor: item.selectedFlavor?.name,
+        selectedFlavors: item.selectedFlavors?.map((f) => f.name),
+        comboItems: item.selectedComboItems?.map(
+          (ci) => `${ci.quantity}x ${ci.name}`,
+        ),
+        removedIngredients: item.removedIngredients,
+      }));
 
-    // Open WhatsApp
-    const whatsappUrl = getWhatsAppMessage(
-      company.whatsapp,
-      customerName,
-      paymentMethodLabels[paymentMethod],
-      notes,
-    );
+      // Create order in database
+      const result = await createOrder({
+        companyId: company.id,
+        customerName,
+        customerPhone,
+        items: orderItems,
+        total,
+        paymentMethod,
+        notes,
+      });
 
-    window.open(whatsappUrl, "_blank");
-    clearCart();
-    setIsOpen(false);
-    setShowCheckout(false);
-    setCustomerName("");
-    setCustomerPhone("");
-    setNotes("");
-    setIsSubmitting(false);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create order");
+      }
+
+      // Open WhatsApp
+      const whatsappUrl = getWhatsAppMessage(
+        company.whatsapp,
+        customerName,
+        paymentMethodLabels[paymentMethod],
+        notes,
+      );
+
+      window.open(whatsappUrl, "_blank");
+      clearCart();
+      setIsOpen(false);
+      setShowCheckout(false);
+      setCustomerName("");
+      setCustomerPhone("");
+      setNotes("");
+    } catch (error) {
+      console.error("Error processing order:", error);
+      alert("Erro ao processar pedido. Por favor, tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -155,10 +195,19 @@ export function CartSheet({ company }: CartSheetProps) {
                             <h4 className="font-medium text-foreground truncate">
                               {item.product.name}
                             </h4>
-                            {item.selectedFlavor && (
+                            {item.selectedFlavors &&
+                            item.selectedFlavors.length > 0 ? (
                               <p className="text-xs text-muted-foreground">
-                                {item.selectedFlavor.name}
+                                {item.selectedFlavors
+                                  .map((f) => f.name)
+                                  .join(", ")}
                               </p>
+                            ) : (
+                              item.selectedFlavor && (
+                                <p className="text-xs text-muted-foreground">
+                                  {item.selectedFlavor.name}
+                                </p>
+                              )
                             )}
                             {item.removedIngredients &&
                               item.removedIngredients.length > 0 && (
@@ -355,10 +404,20 @@ export function CartSheet({ company }: CartSheetProps) {
                             </span>
                             <span>{formatCurrency(item.subtotal)}</span>
                           </div>
-                          {item.selectedFlavor && (
+                          {item.selectedFlavors &&
+                          item.selectedFlavors.length > 0 ? (
                             <span className="text-xs pl-4">
-                              + {item.selectedFlavor.name}
+                              +{" "}
+                              {item.selectedFlavors
+                                .map((f) => f.name)
+                                .join(", ")}
                             </span>
+                          ) : (
+                            item.selectedFlavor && (
+                              <span className="text-xs pl-4">
+                                + {item.selectedFlavor.name}
+                              </span>
+                            )
                           )}
                           {item.removedIngredients &&
                             item.removedIngredients.length > 0 && (

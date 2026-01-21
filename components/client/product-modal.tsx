@@ -22,9 +22,7 @@ export function ProductModal({
   products = [],
 }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
-  const [selectedFlavor, setSelectedFlavor] = useState<ProductFlavor | null>(
-    null,
-  );
+  const [selectedFlavors, setSelectedFlavors] = useState<ProductFlavor[]>([]);
   // GroupID -> ItemID -> Quantity
   const [comboSelections, setComboSelections] = useState<
     Record<string, Record<string, number>>
@@ -32,11 +30,27 @@ export function ProductModal({
   const [removedIngredients, setRemovedIngredients] = useState<string[]>([]);
   const { addItem } = useCart();
 
+  const getFlavorConfig = () => {
+    if (!product?.flavors) return { min: 0, max: 0, list: [] };
+    if (Array.isArray(product.flavors)) {
+      return { min: 1, max: 1, list: product.flavors };
+    }
+    return {
+      min: product.flavors.min || 0,
+      max: product.flavors.max || 0,
+      list: product.flavors.options || [],
+    };
+  };
+
   // Reset state when product changes
   useEffect(() => {
     if (product) {
       setQuantity(1);
-      setSelectedFlavor(product.flavors?.[0] || null);
+      const config = getFlavorConfig();
+      // Pre-select if min > 0 and we have options?
+      // Better to let user select unless we want to force default.
+      // For now, empty selection.
+      setSelectedFlavors([]);
       setComboSelections({});
       setRemovedIngredients([]);
     }
@@ -53,9 +67,9 @@ export function ProductModal({
   const getUnitPrice = () => {
     let price = hasPromotion ? product.promotionalPrice! : product.price;
 
-    if (selectedFlavor) {
-      price += selectedFlavor.priceModifier;
-    }
+    selectedFlavors.forEach((flavor) => {
+      price += flavor.priceModifier;
+    });
 
     if (product.productType === "combo" && product.comboConfig) {
       // Calculate price from groups
@@ -108,7 +122,10 @@ export function ProductModal({
   };
 
   const canAddToCart = () => {
-    if (product.productType === "flavors" && !selectedFlavor) return false;
+    if (product.productType === "flavors") {
+      const { min } = getFlavorConfig();
+      if (selectedFlavors.length < min) return false;
+    }
 
     if (product.productType === "combo" && product.comboConfig) {
       if (product.comboConfig.groups) {
@@ -166,11 +183,43 @@ export function ProductModal({
     addItem(
       product,
       quantity,
-      selectedFlavor || undefined,
+      undefined,
       selectedComboItems.length > 0 ? selectedComboItems : undefined,
       removedIngredients,
+      selectedFlavors,
     );
     onClose();
+  };
+
+  const handleFlavorToggle = (flavor: ProductFlavor) => {
+    const { max } = getFlavorConfig();
+    const isSelected = selectedFlavors.some((f) => f.id === flavor.id);
+
+    if (max === 1) {
+      if (!isSelected) {
+        setSelectedFlavors([flavor]);
+      } else {
+        // Optional: allow deselecting if min === 0?
+        // For now, assuming standard radio behavior (cannot deselect the only option by clicking it)
+        // unless we want to allow 0 selections.
+        const { min } = getFlavorConfig();
+        if (min === 0) {
+          setSelectedFlavors([]);
+        }
+      }
+    } else {
+      // Multiple selection
+      if (isSelected) {
+        setSelectedFlavors((prev) => prev.filter((f) => f.id !== flavor.id));
+      } else {
+        if (selectedFlavors.length < max) {
+          setSelectedFlavors((prev) => [...prev, flavor]);
+        } else {
+          // Optional: User feedback for max reached
+          // For now, just ignore
+        }
+      }
+    }
   };
 
   const handleUpdateSelection = (
@@ -324,60 +373,85 @@ export function ProductModal({
           {/* Flavors Selection */}
           {product.productType === "flavors" && product.flavors && (
             <div className="mb-6">
-              <h3 className="font-semibold text-foreground mb-3">
-                Escolha o sabor
-              </h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold text-foreground">
+                  Escolha o sabor
+                </h3>
+                {(() => {
+                  const { min, max } = getFlavorConfig();
+                  return (
+                    <span className="text-xs text-muted-foreground">
+                      {max > 1
+                        ? `Selecione ${min === max ? min : `${min} a ${max}`} (${selectedFlavors.length}/${max})`
+                        : "Selecione 1 opção"}
+                    </span>
+                  );
+                })()}
+              </div>
               <div className="grid grid-cols-1 gap-3">
-                {product.flavors.map((flavor) => (
-                  <button
-                    key={flavor.id}
-                    onClick={() => setSelectedFlavor(flavor)}
-                    className={`
+                {getFlavorConfig().list.map((flavor) => {
+                  const isSelected = selectedFlavors.some(
+                    (f) => f.id === flavor.id,
+                  );
+                  const { max } = getFlavorConfig();
+                  const isMaxReached = selectedFlavors.length >= max;
+                  const isDisabled = !isSelected && isMaxReached && max > 1;
+
+                  return (
+                    <button
+                      key={flavor.id}
+                      onClick={() => handleFlavorToggle(flavor)}
+                      disabled={isDisabled}
+                      className={`
                       relative overflow-hidden flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 text-left
                       ${
-                        selectedFlavor?.id === flavor.id
+                        isSelected
                           ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-transparent bg-secondary/50 hover:bg-secondary hover:border-primary/20"
+                          : isDisabled
+                            ? "border-transparent bg-secondary/30 opacity-50 cursor-not-allowed"
+                            : "border-transparent bg-secondary/50 hover:bg-secondary hover:border-primary/20"
                       }
                     `}
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {flavor.name}
-                      </p>
-                      {flavor.description && (
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                          {flavor.description}
+                    >
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {flavor.name}
                         </p>
-                      )}
-                    </div>
-                    {flavor.priceModifier !== 0 && (
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-sm font-bold px-2 py-1 rounded-md ${
-                            flavor.priceModifier > 0
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                          }`}
-                        >
-                          {flavor.priceModifier > 0 ? "+" : ""}
-                          {formatCurrency(flavor.priceModifier)}
-                        </span>
-                        {selectedFlavor?.id === flavor.id && (
-                          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground">
-                            <Check className="w-3 h-3" />
-                          </div>
+                        {flavor.description && (
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {flavor.description}
+                          </p>
                         )}
                       </div>
-                    )}
-                    {flavor.priceModifier === 0 &&
-                      selectedFlavor?.id === flavor.id && (
-                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground">
-                          <Check className="w-3 h-3" />
+                      <div className="flex items-center gap-2">
+                        {flavor.priceModifier !== 0 && (
+                          <span
+                            className={`text-sm font-bold px-2 py-1 rounded-md ${
+                              flavor.priceModifier > 0
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            }`}
+                          >
+                            {flavor.priceModifier > 0 ? "+" : ""}
+                            {formatCurrency(flavor.priceModifier)}
+                          </span>
+                        )}
+                        <div
+                          className={`
+                          flex items-center justify-center w-5 h-5 rounded-full border transition-colors
+                          ${
+                            isSelected
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-muted-foreground/30 bg-transparent"
+                          }
+                        `}
+                        >
+                          {isSelected && <Check className="w-3 h-3" />}
                         </div>
-                      )}
-                  </button>
-                ))}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

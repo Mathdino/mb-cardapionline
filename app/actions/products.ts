@@ -73,6 +73,7 @@ export async function createProduct(companyId: string, data: any) {
       },
     });
     revalidatePath("/empresa/dashboard/produtos");
+    revalidatePath("/empresa/dashboard/promocoes");
     return { success: true, product };
   } catch (error) {
     console.error("Error creating product:", error);
@@ -101,6 +102,7 @@ export async function updateProduct(id: string, companyId: string, data: any) {
     });
 
     revalidatePath("/empresa/dashboard/produtos");
+    revalidatePath("/empresa/dashboard/promocoes");
     return { success: true, product };
   } catch (error) {
     console.error("Error updating product:", error);
@@ -128,6 +130,7 @@ export async function deleteProduct(id: string, companyId: string) {
     });
 
     revalidatePath("/empresa/dashboard/produtos");
+    revalidatePath("/empresa/dashboard/promocoes");
     return { success: true };
   } catch (error) {
     console.error("Error deleting product:", error);

@@ -18,7 +18,7 @@ interface ImageCropperProps {
   imageSrc: string | null;
   open: boolean;
   onClose: () => void;
-  onCropComplete: (croppedImage: Blob) => void;
+  onCropComplete: (croppedImage: Blob) => Promise<void> | void;
   aspect?: number;
 }
 
@@ -60,7 +60,7 @@ export function ImageCropper({
         croppedAreaPixels,
         rotation,
       );
-      onCropComplete(croppedImage);
+      await onCropComplete(croppedImage);
       onClose();
     } catch (e) {
       console.error(e);

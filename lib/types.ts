@@ -62,7 +62,9 @@ export interface Product {
   promotionalPrice?: number;
   isPromotion: boolean;
   productType: "simple" | "flavors" | "combo";
-  flavors?: ProductFlavor[];
+  flavors?:
+    | ProductFlavor[]
+    | { min: number; max: number; options: ProductFlavor[] };
   comboConfig?: ComboConfig;
   ingredients?: string[];
   isAvailable: boolean;
@@ -116,18 +118,14 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   unitPrice: number;
-  selectedFlavor?: string;
+  selectedFlavor?: string; // Kept for backward compatibility
+  selectedFlavors?: string[]; // New field for multiple flavors
   comboItems?: string[];
+  removedIngredients?: string[];
   subtotal: number;
 }
 
-export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "preparing"
-  | "ready"
-  | "delivered"
-  | "cancelled";
+export type OrderStatus = "pending" | "preparing" | "delivered" | "cancelled";
 
 // Cart Types
 export interface SelectedComboItem extends ComboItem {
@@ -138,7 +136,8 @@ export interface CartItem {
   cartItemId: string;
   product: Product;
   quantity: number;
-  selectedFlavor?: ProductFlavor;
+  selectedFlavor?: ProductFlavor; // Kept for backward compatibility
+  selectedFlavors?: ProductFlavor[]; // New field for multiple flavors
   selectedComboItems?: SelectedComboItem[];
   removedIngredients?: string[];
   subtotal: number;

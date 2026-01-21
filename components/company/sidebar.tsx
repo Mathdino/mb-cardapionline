@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { toggleRestaurantStatus } from "@/app/actions/company";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/empresa/dashboard" },
@@ -37,13 +40,24 @@ const menuItems = [
 
 export function CompanySidebar() {
   const pathname = usePathname();
-  const { logout, getCompany } = useAuth();
+  const { logout, getCompany, updateCompanyData } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   const company = getCompany();
 
   const handleLogout = () => {
     logout();
     window.location.href = "/empresa";
+  };
+
+  const handleToggleStatus = async (checked: boolean) => {
+    if (!company) return;
+    setIsToggling(true);
+    const result = await toggleRestaurantStatus(company.id, checked);
+    if (result.success && result.company) {
+      updateCompanyData(result.company as any);
+    }
+    setIsToggling(false);
   };
 
   return (
@@ -117,7 +131,19 @@ export function CompanySidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t">
+        <div className="p-4 border-t space-y-4">
+          {/* <div className="flex items-center justify-between px-3">
+            <Label htmlFor="status-mode" className="font-medium text-sm">
+              {company?.isOpen ? "Loja Aberta" : "Loja Fechada"}
+            </Label>
+            <Switch
+              id="status-mode"
+              checked={company?.isOpen || false}
+              onCheckedChange={handleToggleStatus}
+              disabled={isToggling}
+            />
+          </div> */}
+
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"

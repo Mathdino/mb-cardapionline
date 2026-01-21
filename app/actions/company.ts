@@ -53,3 +53,23 @@ export async function updateCompany(companyId: string, data: Partial<Company>) {
     return { success: false, error: "Failed to update company information" };
   }
 }
+
+export async function toggleRestaurantStatus(
+  companyId: string,
+  isOpen: boolean,
+) {
+  try {
+    const updatedCompany = await prisma.company.update({
+      where: { id: companyId },
+      data: { isOpen },
+    });
+
+    revalidatePath("/empresa/dashboard");
+    revalidatePath(`/${updatedCompany.slug}`);
+
+    return { success: true, company: updatedCompany };
+  } catch (error) {
+    console.error("Error toggling restaurant status:", error);
+    return { success: false, error: "Failed to update restaurant status" };
+  }
+}

@@ -15,6 +15,7 @@ export function RestaurantHeader({ company }: RestaurantHeaderProps) {
   const todayHours = company.businessHours.find((h) => h.dayOfWeek === today);
 
   const isCurrentlyOpen = () => {
+    if (!company.isOpen) return false;
     if (!todayHours?.isOpen) return false;
     const now = new Date();
     const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
