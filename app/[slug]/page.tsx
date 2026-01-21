@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getCompanyBySlug } from "@/app/actions/company";
 import { getCategories } from "@/app/actions/categories";
-import { getProducts } from "@/app/actions/products";
+import { getStoreProducts } from "@/app/actions/products";
 import RestaurantPage from "./restaurant-page";
 
 interface PageProps {
@@ -32,7 +32,7 @@ export default async function Page({ params }: PageProps) {
 
   const [categories, products] = await Promise.all([
     getCategories(company.id),
-    getProducts(company.id),
+    getStoreProducts(company.id),
   ]);
 
   return (

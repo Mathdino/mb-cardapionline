@@ -1,3 +1,4 @@
+
 generator client {
   provider = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
@@ -25,6 +26,7 @@ model Company {
   updatedAt      DateTime       @updatedAt
   categories     Category[]
   products       Product[]
+  promotions     Promotion[]
   orders         Order[]
   users          User[]
 }
@@ -63,9 +65,26 @@ model Product {
   productType      String
   flavors          Json?
   comboConfig      Json?
+  ingredients      String[]
   isAvailable      Boolean  @default(true)
   company          Company  @relation(fields: [companyId], references: [id])
   category         Category @relation(fields: [categoryId], references: [id])
+  promotions       Promotion[]
+}
+
+model Promotion {
+  id               String   @id @default(uuid())
+  companyId        String
+  productId        String
+  promotionalPrice Float
+  startDate        DateTime
+  endDate          DateTime
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company          Company  @relation(fields: [companyId], references: [id])
+  product          Product  @relation(fields: [productId], references: [id])
 }
 
 model Order {

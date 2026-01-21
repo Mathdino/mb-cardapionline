@@ -151,7 +151,7 @@ export default function CategoriasPage() {
                       {category.name}
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Ordem: {category.order} • {category.products?.length || 0}{" "}
+                      Ordem: {category.order} • {category._count?.products || 0}{" "}
                       produtos
                     </p>
                   </div>

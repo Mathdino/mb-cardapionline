@@ -681,7 +681,7 @@ export default function InformacoesPage() {
         {/* Payment Methods */}
         <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
           <h2 className="font-bold text-foreground border-b pb-3">
-            Formas de Pagamento
+            Selecione as Formas de Pagamento
           </h2>
 
           <div className="flex flex-wrap gap-3">

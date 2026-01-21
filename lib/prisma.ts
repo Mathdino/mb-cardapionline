@@ -4,7 +4,12 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = process.env.DATABASE_URL;
 
-const pool = new Pool({ connectionString });
+const pool = new Pool({
+  connectionString:
+    connectionString && !connectionString.includes("uselibpqcompat")
+      ? `${connectionString}${connectionString.includes("?") ? "&" : "?"}uselibpqcompat=true`
+      : connectionString,
+});
 const adapter = new PrismaPg(pool);
 
 const prismaClientSingleton = () => {

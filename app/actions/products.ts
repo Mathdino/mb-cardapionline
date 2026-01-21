@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 
 export async function getProducts(companyId: string) {
   try {
@@ -17,12 +18,58 @@ export async function getProducts(companyId: string) {
   }
 }
 
+export async function getStoreProducts(companyId: string) {
+  try {
+    const now = new Date();
+    const products = await prisma.product.findMany({
+      where: { companyId },
+      include: {
+        category: true,
+        promotions: {
+          where: {
+            isActive: true,
+            startDate: { lte: now },
+            endDate: { gte: now },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return products.map((item) => {
+      // Extract promotions to avoid returning it if not in type,
+      // but we need to access it first.
+      const { promotions, ...product } = item;
+      const activePromotion = promotions && promotions[0];
+
+      if (activePromotion) {
+        return {
+          ...product,
+          isPromotion: true,
+          promotionalPrice: activePromotion.promotionalPrice,
+        };
+      }
+      return product;
+    });
+  } catch (error) {
+    console.error("Error fetching store products:", error);
+    return [];
+  }
+}
+
 export async function createProduct(companyId: string, data: any) {
   try {
+    const processedData = { ...data };
+    if (processedData.flavors === null) processedData.flavors = Prisma.DbNull;
+    if (processedData.comboConfig === null)
+      processedData.comboConfig = Prisma.DbNull;
+
     const product = await prisma.product.create({
       data: {
         companyId,
-        ...data,
+        ...processedData,
       },
     });
     revalidatePath("/empresa/dashboard/produtos");
@@ -43,9 +90,14 @@ export async function updateProduct(id: string, companyId: string, data: any) {
       return { success: false, error: "Product not found or access denied" };
     }
 
+    const processedData = { ...data };
+    if (processedData.flavors === null) processedData.flavors = Prisma.DbNull;
+    if (processedData.comboConfig === null)
+      processedData.comboConfig = Prisma.DbNull;
+
     const product = await prisma.product.update({
       where: { id },
-      data,
+      data: processedData,
     });
 
     revalidatePath("/empresa/dashboard/produtos");
@@ -65,6 +117,11 @@ export async function deleteProduct(id: string, companyId: string) {
     if (!existing) {
       return { success: false, error: "Product not found or access denied" };
     }
+
+    // Delete related promotions first to avoid foreign key constraint violations
+    await prisma.promotion.deleteMany({
+      where: { productId: id },
+    });
 
     await prisma.product.delete({
       where: { id },

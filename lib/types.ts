@@ -64,6 +64,7 @@ export interface Product {
   productType: "simple" | "flavors" | "combo";
   flavors?: ProductFlavor[];
   comboConfig?: ComboConfig;
+  ingredients?: string[];
   isAvailable: boolean;
 }
 
@@ -77,6 +78,17 @@ export interface ProductFlavor {
 export interface ComboConfig {
   maxItems: number;
   options: ComboItem[];
+  groups?: ComboGroup[];
+}
+
+export interface ComboGroup {
+  id: string;
+  title: string;
+  type: "products" | "custom";
+  min: number;
+  max: number;
+  productIds?: string[];
+  options?: ComboItem[];
 }
 
 export interface ComboItem {
@@ -123,12 +135,13 @@ export interface SelectedComboItem extends ComboItem {
 }
 
 export interface CartItem {
-  cartItemId: string
-  product: Product
-  quantity: number
-  selectedFlavor?: ProductFlavor
-  selectedComboItems?: SelectedComboItem[]
-  subtotal: number
+  cartItemId: string;
+  product: Product;
+  quantity: number;
+  selectedFlavor?: ProductFlavor;
+  selectedComboItems?: SelectedComboItem[];
+  removedIngredients?: string[];
+  subtotal: number;
 }
 
 export interface Cart {

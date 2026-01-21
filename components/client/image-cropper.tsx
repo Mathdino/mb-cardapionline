@@ -1,19 +1,25 @@
-'use client'
+"use client";
 
-import React, { useState, useCallback } from 'react'
-import Cropper from 'react-easy-crop'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
-import { getCroppedImg } from '@/lib/canvasUtils'
-import { Loader2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react'
+import React, { useState, useCallback } from "react";
+import Cropper from "react-easy-crop";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { getCroppedImg } from "@/lib/canvasUtils";
+import { Loader2, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
 
 interface ImageCropperProps {
-  imageSrc: string | null
-  open: boolean
-  onClose: () => void
-  onCropComplete: (croppedImage: Blob) => void
-  aspect?: number
+  imageSrc: string | null;
+  open: boolean;
+  onClose: () => void;
+  onCropComplete: (croppedImage: Blob) => void;
+  aspect?: number;
 }
 
 export function ImageCropper({
@@ -21,44 +27,47 @@ export function ImageCropper({
   open,
   onClose,
   onCropComplete,
-  aspect = 16 / 9
+  aspect = 16 / 9,
 }: ImageCropperProps) {
-  const [crop, setCrop] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(1)
-  const [rotation, setRotation] = useState(0)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const onCropChange = (crop: { x: number; y: number }) => {
-    setCrop(crop)
-  }
+    setCrop(crop);
+  };
 
   const onZoomChange = (zoom: number) => {
-    setZoom(zoom)
-  }
+    setZoom(zoom);
+  };
 
-  const onCropCompleteHandler = useCallback((croppedArea: any, croppedAreaPixels: any) => {
-    setCroppedAreaPixels(croppedAreaPixels)
-  }, [])
+  const onCropCompleteHandler = useCallback(
+    (croppedArea: any, croppedAreaPixels: any) => {
+      setCroppedAreaPixels(croppedAreaPixels);
+    },
+    [],
+  );
 
   const handleSave = async () => {
-    if (!imageSrc || !croppedAreaPixels) return
+    if (!imageSrc || !croppedAreaPixels) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const croppedImage = await getCroppedImg(
         imageSrc,
         croppedAreaPixels,
-        rotation
-      )
-      onCropComplete(croppedImage)
-      onClose()
+        rotation,
+      );
+      onCropComplete(croppedImage);
+      onClose();
     } catch (e) {
-      console.error(e)
+      console.error(e);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -66,7 +75,7 @@ export function ImageCropper({
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>Editar Imagem</DialogTitle>
         </DialogHeader>
-        
+
         <div className="relative h-[400px] w-full bg-black mt-4">
           {imageSrc && (
             <Cropper
@@ -78,6 +87,7 @@ export function ImageCropper({
               onCropChange={onCropChange}
               onCropComplete={onCropCompleteHandler}
               onZoomChange={onZoomChange}
+              restrictPosition={false}
             />
           )}
         </div>
@@ -87,7 +97,7 @@ export function ImageCropper({
             <ZoomOut className="h-4 w-4 text-muted-foreground" />
             <Slider
               value={[zoom]}
-              min={1}
+              min={0.5}
               max={3}
               step={0.1}
               onValueChange={(value) => setZoom(value[0])}
@@ -105,7 +115,7 @@ export function ImageCropper({
             >
               <RotateCw className="h-4 w-4" />
             </Button>
-            
+
             <div className="flex gap-2">
               <Button variant="outline" onClick={onClose}>
                 Cancelar
@@ -119,5 +129,5 @@ export function ImageCropper({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

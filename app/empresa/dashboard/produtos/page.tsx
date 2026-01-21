@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getCategories } from "@/app/actions/categories";
 import {
   getProducts,
+  getStoreProducts,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -49,18 +50,47 @@ function ProdutosContent() {
     name: "",
     description: "",
     price: "",
+    promotionalPrice: "",
+    isPromotion: false,
     categoryId: "",
     productType: "simple" as "simple" | "flavors" | "combo",
     image: "",
+    ingredients: [] as string[],
     flavors: [] as { id: string; name: string; price: string }[],
     comboConfig: {
       maxItems: "1",
       options: [] as { id: string; name: string; price: string }[],
+      groups: [] as {
+        id: string;
+        title: string;
+        type: "products" | "custom";
+        min: string;
+        max: string;
+        productIds: string[];
+        options: { id: string; name: string; price: string }[];
+      }[],
     },
   });
 
   const [newFlavor, setNewFlavor] = useState({ name: "", price: "" });
   const [newComboOption, setNewComboOption] = useState({ name: "", price: "" });
+  const [newIngredient, setNewIngredient] = useState("");
+
+  const handleAddIngredient = () => {
+    if (!newIngredient.trim()) return;
+    setFormData((prev) => ({
+      ...prev,
+      ingredients: [...(prev.ingredients || []), newIngredient.trim()],
+    }));
+    setNewIngredient("");
+  };
+
+  const handleRemoveIngredient = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      ingredients: (prev.ingredients || []).filter((_, i) => i !== index),
+    }));
+  };
 
   const handleAddFlavor = () => {
     if (!newFlavor.name) return;
@@ -118,7 +148,7 @@ function ProdutosContent() {
     async function load() {
       if (company?.id) {
         const [productsData, categoriesData] = await Promise.all([
-          getProducts(company.id),
+          getStoreProducts(company.id),
           getCategories(company.id),
         ]);
         setProducts(productsData);
@@ -159,9 +189,12 @@ function ProdutosContent() {
         name: product.name,
         description: product.description,
         price: product.price.toString(),
+        promotionalPrice: product.promotionalPrice?.toString() || "",
+        isPromotion: product.isPromotion || false,
         categoryId: product.categoryId,
         productType: product.productType as any,
         image: product.image,
+        ingredients: product.ingredients || [],
         flavors: Array.isArray(product.flavors)
           ? product.flavors.map((f: any) => ({
               ...f,
@@ -186,9 +219,12 @@ function ProdutosContent() {
         name: "",
         description: "",
         price: "",
+        promotionalPrice: "",
+        isPromotion: false,
         categoryId: categories[0]?.id || "",
         productType: "simple",
         image: "",
+        ingredients: [],
         flavors: [],
         comboConfig: { maxItems: "1", options: [] },
       });
@@ -247,9 +283,14 @@ function ProdutosContent() {
       name: formData.name,
       description: formData.description,
       price: parseFloat(formData.price),
+      promotionalPrice: formData.promotionalPrice
+        ? parseFloat(formData.promotionalPrice)
+        : null,
+      isPromotion: formData.isPromotion,
       categoryId: formData.categoryId,
       productType: formData.productType,
       image: formData.image,
+      ingredients: formData.ingredients,
       flavors:
         formData.productType === "flavors"
           ? formData.flavors.map((f) => ({
@@ -257,7 +298,7 @@ function ProdutosContent() {
               name: f.name,
               priceModifier: parseFloat(f.price),
             }))
-          : undefined,
+          : null,
       comboConfig:
         formData.productType === "combo"
           ? {
@@ -267,8 +308,22 @@ function ProdutosContent() {
                 name: o.name,
                 priceModifier: parseFloat(o.price),
               })),
+              groups: formData.comboConfig.groups.map((g) => ({
+                id: g.id,
+                title: g.title,
+                type: g.type,
+                min: parseInt(g.min) || 0,
+                max: parseInt(g.max) || 0,
+                productIds: g.productIds || [],
+                options:
+                  g.options?.map((o) => ({
+                    id: o.id,
+                    name: o.name,
+                    price: parseFloat(o.price) || 0,
+                  })) || [],
+              })),
             }
-          : undefined,
+          : null,
     };
 
     try {
@@ -390,7 +445,7 @@ function ProdutosContent() {
                 </button>
                 <button
                   onClick={() => handleDelete(product.id)}
-                  className="p-2 bg-destructive/80 backdrop-blur-sm rounded-lg hover:bg-destructive text-destructive-foreground transition-colors"
+                  className="p-2 bg-destructive/80 backdrop-blur-sm rounded-lg hover:bg-destructive text-white transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -405,9 +460,22 @@ function ProdutosContent() {
                 <h3 className="font-bold text-foreground line-clamp-1">
                   {product.name}
                 </h3>
-                <span className="font-bold text-primary whitespace-nowrap">
-                  {formatCurrency(product.price)}
-                </span>
+                <div className="flex flex-col items-end">
+                  {product.promotionalPrice ? (
+                    <>
+                      <span className="text-xs text-muted-foreground line-through">
+                        {formatCurrency(product.price)}
+                      </span>
+                      <span className="font-bold text-red-600 whitespace-nowrap">
+                        {formatCurrency(product.promotionalPrice)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-bold text-primary whitespace-nowrap">
+                      {formatCurrency(product.price)}
+                    </span>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
                 {product.description}
@@ -415,7 +483,11 @@ function ProdutosContent() {
 
               <div className="flex items-center justify-between text-xs text-muted-foreground border-t pt-3">
                 <span className="capitalize">
-                  {product.productType === "simple" ? "Simples" : "Composto"}
+                  {product.productType === "simple"
+                    ? "Simples"
+                    : product.productType === "flavors"
+                      ? "Com Sabores"
+                      : "Combo"}
                 </span>
                 <span
                   className={
@@ -541,6 +613,45 @@ function ProdutosContent() {
                       required
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Preço Promocional (R$)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.promotionalPrice}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          promotionalPrice: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.isPromotion}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            isPromotion: e.target.checked,
+                          }))
+                        }
+                        className="text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">
+                        Habilitar Promoção
+                      </span>
+                    </label>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -584,6 +695,58 @@ function ProdutosContent() {
                       placeholder="Descreva os ingredientes e detalhes do produto..."
                       required
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Ingredientes (Opcional)
+                    </label>
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newIngredient}
+                          onChange={(e) => setNewIngredient(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddIngredient();
+                            }
+                          }}
+                          className="flex-1 px-3 py-2 rounded-lg border bg-background text-sm"
+                          placeholder="Adicionar ingrediente (ex: Cebola)"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleAddIngredient}
+                          size="sm"
+                          variant="secondary"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {formData.ingredients &&
+                        formData.ingredients.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {formData.ingredients.map((ingredient, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-1 bg-secondary px-2 py-1 rounded text-sm"
+                              >
+                                <span>{ingredient}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveIngredient(index)}
+                                  className="text-muted-foreground hover:text-destructive"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </div>
                   </div>
 
                   <div>
@@ -639,7 +802,9 @@ function ProdutosContent() {
                           }
                           className="text-primary focus:ring-primary"
                         />
-                        <span className="text-sm text-foreground">Combo</span>
+                        <span className="text-sm text-foreground">
+                          por Quant.
+                        </span>
                       </label>
                     </div>
                   </div>
@@ -736,92 +901,341 @@ function ProdutosContent() {
                       <h4 className="font-medium text-sm mb-3">
                         Configuração do Combo
                       </h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Adicione grupos de escolha para o combo (ex: "Escolha 2
+                        Lanches", "Adicionais Obrigatórios").
+                      </p>
 
-                      <div className="mb-4">
-                        <label className="block text-sm text-foreground mb-2">
-                          Quantidade de itens que o cliente pode escolher
-                        </label>
-                        <input
-                          type="number"
-                          value={formData.comboConfig.maxItems}
-                          onChange={(e) =>
+                      <div className="space-y-4">
+                        {formData.comboConfig.groups.map(
+                          (group, groupIndex) => (
+                            <div
+                              key={group.id}
+                              className="bg-background border rounded-lg p-4"
+                            >
+                              <div className="flex justify-between items-start mb-4">
+                                <h5 className="font-medium text-sm">
+                                  Grupo {groupIndex + 1}
+                                </h5>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      comboConfig: {
+                                        ...prev.comboConfig,
+                                        groups: prev.comboConfig.groups.filter(
+                                          (g) => g.id !== group.id,
+                                        ),
+                                      },
+                                    }));
+                                  }}
+                                  className="text-destructive hover:bg-destructive/10 p-1 rounded"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                  <label className="text-xs text-muted-foreground mb-1 block">
+                                    Título do Grupo
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={group.title}
+                                    onChange={(e) => {
+                                      const newGroups = [
+                                        ...formData.comboConfig.groups,
+                                      ];
+                                      newGroups[groupIndex].title =
+                                        e.target.value;
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        comboConfig: {
+                                          ...prev.comboConfig,
+                                          groups: newGroups,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                                    placeholder="Ex: Escolha seu Lanche"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-muted-foreground mb-1 block">
+                                    Tipo de Escolha
+                                  </label>
+                                  <select
+                                    value={group.type}
+                                    onChange={(e) => {
+                                      const newGroups = [
+                                        ...formData.comboConfig.groups,
+                                      ];
+                                      newGroups[groupIndex].type = e.target
+                                        .value as any;
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        comboConfig: {
+                                          ...prev.comboConfig,
+                                          groups: newGroups,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                                  >
+                                    <option value="products">
+                                      Produtos Cadastrados
+                                    </option>
+                                    <option value="custom">
+                                      Itens Personalizados
+                                    </option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-muted-foreground mb-1 block">
+                                    Mínimo
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={group.min}
+                                    onChange={(e) => {
+                                      const newGroups = [
+                                        ...formData.comboConfig.groups,
+                                      ];
+                                      newGroups[groupIndex].min =
+                                        e.target.value;
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        comboConfig: {
+                                          ...prev.comboConfig,
+                                          groups: newGroups,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                                    min="0"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-muted-foreground mb-1 block">
+                                    Máximo
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={group.max}
+                                    onChange={(e) => {
+                                      const newGroups = [
+                                        ...formData.comboConfig.groups,
+                                      ];
+                                      newGroups[groupIndex].max =
+                                        e.target.value;
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        comboConfig: {
+                                          ...prev.comboConfig,
+                                          groups: newGroups,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                                    min="1"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Group Content Based on Type */}
+                              {group.type === "products" ? (
+                                <div className="border rounded-lg p-3 max-h-40 overflow-y-auto bg-background">
+                                  <label className="text-xs text-muted-foreground mb-2 block">
+                                    Selecione os produtos disponíveis:
+                                  </label>
+                                  {products.map((product) => (
+                                    <label
+                                      key={product.id}
+                                      className="flex items-center gap-2 py-1 hover:bg-secondary/50 rounded px-1 cursor-pointer"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={(
+                                          group.productIds || []
+                                        ).includes(product.id)}
+                                        onChange={(e) => {
+                                          const newGroups = [
+                                            ...formData.comboConfig.groups,
+                                          ];
+                                          const currentIds =
+                                            newGroups[groupIndex].productIds ||
+                                            [];
+                                          if (e.target.checked) {
+                                            newGroups[groupIndex].productIds = [
+                                              ...currentIds,
+                                              product.id,
+                                            ];
+                                          } else {
+                                            newGroups[groupIndex].productIds =
+                                              currentIds.filter(
+                                                (id) => id !== product.id,
+                                              );
+                                          }
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            comboConfig: {
+                                              ...prev.comboConfig,
+                                              groups: newGroups,
+                                            },
+                                          }));
+                                        }}
+                                        className="rounded border-gray-300 text-primary focus:ring-primary"
+                                      />
+                                      <span className="text-sm">
+                                        {product.name}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="space-y-3">
+                                  <label className="text-xs text-muted-foreground block">
+                                    Opções Personalizadas:
+                                  </label>
+                                  {group.options?.map((option, optIndex) => (
+                                    <div
+                                      key={option.id}
+                                      className="flex gap-2 items-center"
+                                    >
+                                      <input
+                                        type="text"
+                                        value={option.name}
+                                        onChange={(e) => {
+                                          const newGroups = [
+                                            ...formData.comboConfig.groups,
+                                          ];
+                                          newGroups[groupIndex].options[
+                                            optIndex
+                                          ].name = e.target.value;
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            comboConfig: {
+                                              ...prev.comboConfig,
+                                              groups: newGroups,
+                                            },
+                                          }));
+                                        }}
+                                        className="flex-1 px-2 py-1 rounded border text-sm"
+                                        placeholder="Nome (ex: Batata)"
+                                      />
+                                      <input
+                                        type="number"
+                                        value={option.price}
+                                        onChange={(e) => {
+                                          const newGroups = [
+                                            ...formData.comboConfig.groups,
+                                          ];
+                                          newGroups[groupIndex].options[
+                                            optIndex
+                                          ].price = e.target.value;
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            comboConfig: {
+                                              ...prev.comboConfig,
+                                              groups: newGroups,
+                                            },
+                                          }));
+                                        }}
+                                        className="w-24 px-2 py-1 rounded border text-sm"
+                                        placeholder="0.00"
+                                        step="0.01"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newGroups = [
+                                            ...formData.comboConfig.groups,
+                                          ];
+                                          newGroups[groupIndex].options =
+                                            newGroups[
+                                              groupIndex
+                                            ].options.filter(
+                                              (_, i) => i !== optIndex,
+                                            );
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            comboConfig: {
+                                              ...prev.comboConfig,
+                                              groups: newGroups,
+                                            },
+                                          }));
+                                        }}
+                                        className="text-destructive p-1"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newGroups = [
+                                        ...formData.comboConfig.groups,
+                                      ];
+                                      if (!newGroups[groupIndex].options)
+                                        newGroups[groupIndex].options = [];
+                                      newGroups[groupIndex].options.push({
+                                        id: Math.random()
+                                          .toString(36)
+                                          .substr(2, 9),
+                                        name: "",
+                                        price: "",
+                                      });
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        comboConfig: {
+                                          ...prev.comboConfig,
+                                          groups: newGroups,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-full"
+                                  >
+                                    <Plus className="h-3 w-3 mr-2" /> Adicionar
+                                    Opção
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          ),
+                        )}
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => {
                             setFormData((prev) => ({
                               ...prev,
                               comboConfig: {
                                 ...prev.comboConfig,
-                                maxItems: e.target.value,
+                                groups: [
+                                  ...prev.comboConfig.groups,
+                                  {
+                                    id: Math.random().toString(36).substr(2, 9),
+                                    title: "",
+                                    type: "products",
+                                    min: "1",
+                                    max: "1",
+                                    productIds: [],
+                                    options: [],
+                                  },
+                                ],
                               },
-                            }))
-                          }
-                          className="w-full px-3 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                          min="1"
-                          required
-                        />
-                      </div>
-
-                      <label className="block text-sm text-foreground mb-2">
-                        Opções disponíveis para escolha
-                      </label>
-
-                      {/* Lista de Opções de Combo Adicionadas */}
-                      {formData.comboConfig.options.length > 0 && (
-                        <div className="space-y-2 mb-4">
-                          {formData.comboConfig.options.map((option) => (
-                            <div
-                              key={option.id}
-                              className="flex items-center justify-between bg-background p-2 rounded border"
-                            >
-                              <div className="text-sm">
-                                <span className="font-medium">
-                                  {option.name}
-                                </span>
-                                {parseFloat(option.price) > 0 && (
-                                  <span className="text-muted-foreground ml-2">
-                                    (+{formatCurrency(parseFloat(option.price))}
-                                    )
-                                  </span>
-                                )}
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleRemoveComboOption(option.id)
-                                }
-                                className="text-destructive hover:bg-destructive/10 p-1 rounded"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Adicionar Nova Opção de Combo */}
-                      <div className="flex gap-2 items-end">
-                        <div className="flex-1">
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Nome da Opção
-                          </label>
-                          <input
-                            type="text"
-                            value={newComboOption.name}
-                            onChange={(e) =>
-                              setNewComboOption((prev) => ({
-                                ...prev,
-                                name: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                            placeholder="Ex: Coca-Cola Lata"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={handleAddComboOption}
-                          size="sm"
-                          variant="secondary"
+                            }));
+                          }}
+                          className="w-full border-dashed border-2"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-4 w-4 mr-2" /> Adicionar Grupo ao
+                          Combo
                         </Button>
                       </div>
                     </div>

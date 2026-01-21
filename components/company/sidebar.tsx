@@ -22,7 +22,11 @@ const menuItems = [
   { icon: ShoppingBag, label: "Pedidos", href: "/empresa/dashboard/pedidos" },
   { icon: Grid3X3, label: "Categorias", href: "/empresa/dashboard/categorias" },
   { icon: Package, label: "Produtos", href: "/empresa/dashboard/produtos" },
-  { icon: Tag, label: "Promoções", href: "/empresa/dashboard/promocoes" },
+  {
+    icon: Tag,
+    label: "Promoções e Combos",
+    href: "/empresa/dashboard/promocoes",
+  },
   {
     icon: DollarSign,
     label: "Financeiro",

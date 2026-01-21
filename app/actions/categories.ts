@@ -8,6 +8,11 @@ export async function getCategories(companyId: string) {
     const categories = await prisma.category.findMany({
       where: { companyId },
       orderBy: { order: "asc" },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
     });
     return categories;
   } catch (error) {

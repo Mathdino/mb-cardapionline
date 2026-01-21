@@ -1,18 +1,22 @@
-"use client"
+"use client";
 
-import Image from 'next/image'
-import type { Product } from '@/lib/types'
-import { formatCurrency } from '@/lib/utils'
+import Image from "next/image";
+import type { Product } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils";
 
 interface ProductCardProps {
-  product: Product
-  onClick: () => void
+  product: Product;
+  onClick: () => void;
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
-  const displayPrice = product.isPromotion && product.promotionalPrice 
-    ? product.promotionalPrice 
-    : product.price
+  const hasPromotion =
+    product.isPromotion &&
+    product.promotionalPrice !== null &&
+    product.promotionalPrice !== undefined &&
+    product.promotionalPrice > 0;
+
+  const displayPrice = hasPromotion ? product.promotionalPrice! : product.price;
 
   return (
     <button
@@ -27,9 +31,14 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           fill
           className="object-cover"
         />
-        {product.isPromotion && (
-          <div className="absolute top-1 left-1 bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-medium">
-            Promo
+        {hasPromotion && (
+          <div className="absolute top-1 left-1 bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
+            -
+            {Math.round(
+              ((product.price - product.promotionalPrice!) / product.price) *
+                100,
+            )}
+            %
           </div>
         )}
       </div>
@@ -37,20 +46,29 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
       {/* Product Info */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <h3 className="font-medium text-foreground truncate">{product.name}</h3>
+          <h3 className="font-medium text-foreground truncate">
+            {product.name}
+          </h3>
           <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
             {product.description}
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 mt-2">
-          {product.isPromotion && product.promotionalPrice ? (
+          {product.productType === "flavors" && (
+            <span className="text-xs text-muted-foreground">a partir de</span>
+          )}
+          {product.productType === "combo" && displayPrice === 0 ? (
+            <span className="text-sm font-medium text-muted-foreground">
+              Monte seu combo
+            </span>
+          ) : hasPromotion ? (
             <>
-              <span className="text-sm text-muted-foreground line-through">
+              <span className="text-xs text-muted-foreground line-through">
                 {formatCurrency(product.price)}
               </span>
               <span className="font-semibold text-red-600">
-                {formatCurrency(product.promotionalPrice)}
+                {formatCurrency(product.promotionalPrice!)}
               </span>
             </>
           ) : (
@@ -58,12 +76,8 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
               {formatCurrency(displayPrice)}
             </span>
           )}
-          
-          {product.productType === 'flavors' && (
-            <span className="text-xs text-muted-foreground">a partir de</span>
-          )}
         </div>
       </div>
     </button>
-  )
+  );
 }

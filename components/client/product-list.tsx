@@ -126,6 +126,7 @@ export function ProductList({
         product={selectedProduct}
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
+        products={products}
       />
     </>
   );

@@ -160,6 +160,12 @@ export function CartSheet({ company }: CartSheetProps) {
                                 {item.selectedFlavor.name}
                               </p>
                             )}
+                            {item.removedIngredients &&
+                              item.removedIngredients.length > 0 && (
+                                <p className="text-xs text-red-500 mt-1">
+                                  Sem: {item.removedIngredients.join(", ")}
+                                </p>
+                              )}
                             {item.selectedComboItems &&
                               item.selectedComboItems.length > 0 && (
                                 <div className="mt-1 space-y-0.5">
@@ -354,6 +360,12 @@ export function CartSheet({ company }: CartSheetProps) {
                               + {item.selectedFlavor.name}
                             </span>
                           )}
+                          {item.removedIngredients &&
+                            item.removedIngredients.length > 0 && (
+                              <span className="text-xs pl-4 text-red-500">
+                                Sem: {item.removedIngredients.join(", ")}
+                              </span>
+                            )}
                           {item.selectedComboItems &&
                             item.selectedComboItems.map((comboItem, i) => (
                               <span key={i} className="text-xs pl-4">

@@ -24,6 +24,7 @@ interface CartContextType {
     quantity: number,
     selectedFlavor?: ProductFlavor,
     selectedComboItems?: SelectedComboItem[],
+    removedIngredients?: string[],
   ) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
@@ -50,6 +51,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       quantity: number,
       selectedFlavor?: ProductFlavor,
       selectedComboItems?: SelectedComboItem[],
+      removedIngredients?: string[],
     ) => {
       setItems((prev) => {
         // Simple check for existing item - for combos/flavors this might need to be more strict
@@ -60,7 +62,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
             item.selectedFlavor?.id === selectedFlavor?.id &&
             // If it has combo items, we always add as new item for simplicity unless deep comparison
             !item.selectedComboItems &&
-            !selectedComboItems,
+            !selectedComboItems &&
+            (!item.removedIngredients ||
+              item.removedIngredients.length === 0) &&
+            (!removedIngredients || removedIngredients.length === 0),
         );
 
         let unitPrice =
@@ -96,6 +101,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             quantity,
             selectedFlavor,
             selectedComboItems,
+            removedIngredients,
             subtotal,
           },
         ];
@@ -162,14 +168,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       message += `*Itens do Pedido:*\n`;
 
       items.forEach((item) => {
-        const price =
-          item.product.isPromotion && item.product.promotionalPrice
-            ? item.product.promotionalPrice
-            : item.product.price;
+        const hasPromotion =
+          item.product.isPromotion &&
+          item.product.promotionalPrice !== null &&
+          item.product.promotionalPrice !== undefined &&
+          item.product.promotionalPrice > 0;
+
+        const price = hasPromotion
+          ? item.product.promotionalPrice!
+          : item.product.price;
 
         message += `- ${item.quantity}x ${item.product.name}`;
         if (item.selectedFlavor) {
           message += ` (${item.selectedFlavor.name})`;
+        }
+
+        if (item.removedIngredients && item.removedIngredients.length > 0) {
+          message += `\n  *Sem:* ${item.removedIngredients.join(", ")}`;
         }
 
         if (item.selectedComboItems && item.selectedComboItems.length > 0) {
