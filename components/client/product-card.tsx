@@ -16,6 +16,16 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
     product.promotionalPrice !== undefined &&
     product.promotionalPrice > 0;
 
+  const getMinFlavorPrice = () => {
+    if (product.productType !== "flavors" || !product.flavors) return 0;
+    const flavors = Array.isArray(product.flavors)
+      ? product.flavors
+      : product.flavors.options;
+    if (!flavors || flavors.length === 0) return 0;
+    return Math.min(...flavors.map((f) => f.priceModifier));
+  };
+
+  const minFlavorPrice = getMinFlavorPrice();
   const displayPrice = hasPromotion ? product.promotionalPrice! : product.price;
 
   return (
@@ -31,7 +41,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           fill
           className="object-cover"
         />
-        {hasPromotion && (
+        {hasPromotion && product.productType !== "flavors" && (
           <div className="absolute top-1 left-1 bg-red-500 text-white px-1.5 py-0.5 rounded text-xs font-bold">
             -
             {Math.round(
@@ -55,23 +65,14 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
         </div>
 
         <div className="flex flex-col items-end gap-0.5 mt-2">
-          {product.productType === "flavors" && (
+          {product.productType === "flavors" ? (
             <>
               <span className="text-xs text-muted-foreground">a partir de</span>
-              {product.flavors &&
-                !Array.isArray(product.flavors) &&
-                product.flavors.max > 1 && (
-                  <span className="text-[10px] font-medium text-primary">
-                    {product.flavors.min === product.flavors.max
-                      ? `Escolha ${product.flavors.max} sabores`
-                      : product.flavors.min > 0
-                        ? `${product.flavors.min} a ${product.flavors.max} sabores`
-                        : `Até ${product.flavors.max} sabores`}
-                  </span>
-                )}
+              <span className="font-semibold text-foreground">
+                {formatCurrency(minFlavorPrice)}
+              </span>
             </>
-          )}
-          {product.productType === "combo" && displayPrice === 0 ? (
+          ) : product.productType === "combo" && displayPrice === 0 ? (
             <span className="text-sm font-medium text-muted-foreground">
               Monte seu combo
             </span>

@@ -143,22 +143,6 @@ export default function EmpresaLoginPage() {
               )}
             </Button>
           </form>
-
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
-            <p className="text-sm font-medium text-foreground mb-2">
-              Credenciais de demonstração:
-            </p>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>
-                <strong>Empresa:</strong> queromaissalgaderia@email.com /
-                empresa123
-              </p>
-              <p>
-                <strong>Admin:</strong> admin@sistema.com / admin123
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </main>

@@ -725,7 +725,7 @@ export default function InformacoesPage() {
           <DialogHeader>
             <DialogTitle>Ajustar Imagem</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-80 bg-black mt-4">
+          <div className="relative w-full h-80 bg-white mt-4">
             {cropImage && (
               <Cropper
                 image={cropImage}

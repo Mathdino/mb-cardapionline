@@ -554,8 +554,8 @@ function ProdutosContent() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 overflow-y-auto">
-          <div className="bg-card w-full max-w-2xl rounded-xl shadow-lg animate-in fade-in zoom-in-95 duration-200 my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-card w-full max-w-2xl rounded-xl shadow-lg animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-bold text-foreground">
                 {editingProduct ? "Editar Produto" : "Novo Produto"}
@@ -745,537 +745,533 @@ function ProdutosContent() {
                         )}
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Tipo de Produto
+              <div className="mt-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Tipo de Produto
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="productType"
+                        value="simple"
+                        checked={formData.productType === "simple"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            productType: e.target.value as any,
+                          }))
+                        }
+                        className="text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">Simples</span>
                     </label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="productType"
+                        value="flavors"
+                        checked={formData.productType === "flavors"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            productType: e.target.value as any,
+                          }))
+                        }
+                        className="text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">
+                        Com Sabores
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="productType"
+                        value="combo"
+                        checked={formData.productType === "combo"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            productType: e.target.value as any,
+                          }))
+                        }
+                        className="text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">
+                        por Quant.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Seção de Sabores */}
+                {formData.productType === "flavors" && (
+                  <div className="mt-4 p-4 bg-secondary/50 rounded-lg border">
+                    <h4 className="font-medium text-sm mb-3">Sabores</h4>
+
+                    {/* Configuração de Quantidade */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Mínimo de Sabores
+                        </label>
                         <input
-                          type="radio"
-                          name="productType"
-                          value="simple"
-                          checked={formData.productType === "simple"}
+                          type="number"
+                          value={formData.minFlavors}
                           onChange={(e) =>
                             setFormData((prev) => ({
                               ...prev,
-                              productType: e.target.value as any,
+                              minFlavors: e.target.value,
                             }))
                           }
-                          className="text-primary focus:ring-primary"
+                          className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                          min="0"
                         />
-                        <span className="text-sm text-foreground">Simples</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Máximo de Sabores
+                        </label>
                         <input
-                          type="radio"
-                          name="productType"
-                          value="flavors"
-                          checked={formData.productType === "flavors"}
+                          type="number"
+                          value={formData.maxFlavors}
                           onChange={(e) =>
                             setFormData((prev) => ({
                               ...prev,
-                              productType: e.target.value as any,
+                              maxFlavors: e.target.value,
                             }))
                           }
-                          className="text-primary focus:ring-primary"
+                          className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                          min="1"
                         />
-                        <span className="text-sm text-foreground">
-                          Com Sabores
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      </div>
+                    </div>
+
+                    {/* Lista de Sabores Adicionados */}
+                    {formData.flavors.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        {formData.flavors.map((flavor) => (
+                          <div
+                            key={flavor.id}
+                            className="flex items-center justify-between bg-background p-2 rounded border"
+                          >
+                            <div className="text-sm">
+                              <span className="font-medium">{flavor.name}</span>
+                              {parseFloat(flavor.price) > 0 && (
+                                <span className="text-muted-foreground ml-2">
+                                  (+{formatCurrency(parseFloat(flavor.price))})
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFlavor(flavor.id)}
+                              className="text-destructive hover:bg-destructive/10 p-1 rounded"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Adicionar Novo Sabor */}
+                    <div className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Nome do Sabor
+                        </label>
                         <input
-                          type="radio"
-                          name="productType"
-                          value="combo"
-                          checked={formData.productType === "combo"}
+                          type="text"
+                          value={newFlavor.name}
                           onChange={(e) =>
-                            setFormData((prev) => ({
+                            setNewFlavor((prev) => ({
                               ...prev,
-                              productType: e.target.value as any,
+                              name: e.target.value,
                             }))
                           }
-                          className="text-primary focus:ring-primary"
+                          className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                          placeholder="Ex: Bacon"
                         />
-                        <span className="text-sm text-foreground">
-                          por Quant.
-                        </span>
-                      </label>
+                      </div>
+                      <div className="w-24">
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Valor (+)
+                        </label>
+                        <input
+                          type="number"
+                          value={newFlavor.price}
+                          onChange={(e) =>
+                            setNewFlavor((prev) => ({
+                              ...prev,
+                              price: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleAddFlavor}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
+                )}
 
-                  {/* Seção de Sabores */}
-                  {formData.productType === "flavors" && (
-                    <div className="mt-4 p-4 bg-secondary/50 rounded-lg border">
-                      <h4 className="font-medium text-sm mb-3">Sabores</h4>
+                {/* Seção de Combo */}
+                {formData.productType === "combo" && (
+                  <div className="mt-4 p-4 bg-secondary/50 rounded-lg border">
+                    <h4 className="font-medium text-sm mb-3">
+                      Configuração do Combo
+                    </h4>
+                    <div className="flex align-center justify-between">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Adicione grupos de escolha para o combo (ex: "Escolha 2
+                        Lanches", "Adicionais Obrigatórios").
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            comboConfig: {
+                              ...prev.comboConfig,
+                              groups: [
+                                ...prev.comboConfig.groups,
+                                {
+                                  id: Math.random().toString(36).substr(2, 9),
+                                  title: "",
+                                  type: "products",
+                                  min: "1",
+                                  max: "1",
+                                  productIds: [],
+                                  options: [],
+                                },
+                              ],
+                            },
+                          }));
+                        }}
+                        className="border-dashed border-2"
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Adicionar Grupo ao
+                        Combo
+                      </Button>
+                    </div>
 
-                      {/* Configuração de Quantidade */}
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Mínimo de Sabores
-                          </label>
-                          <input
-                            type="number"
-                            value={formData.minFlavors}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                minFlavors: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                            min="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Máximo de Sabores
-                          </label>
-                          <input
-                            type="number"
-                            value={formData.maxFlavors}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                maxFlavors: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                            min="1"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Lista de Sabores Adicionados */}
-                      {formData.flavors.length > 0 && (
-                        <div className="space-y-2 mb-4">
-                          {formData.flavors.map((flavor) => (
-                            <div
-                              key={flavor.id}
-                              className="flex items-center justify-between bg-background p-2 rounded border"
-                            >
-                              <div className="text-sm">
-                                <span className="font-medium">
-                                  {flavor.name}
-                                </span>
-                                {parseFloat(flavor.price) > 0 && (
-                                  <span className="text-muted-foreground ml-2">
-                                    (+{formatCurrency(parseFloat(flavor.price))}
-                                    )
-                                  </span>
-                                )}
-                              </div>
+                    <div className="space-y-4">
+                      {formData.comboConfig?.groups?.map(
+                        (group, groupIndex) => (
+                          <div
+                            key={group.id}
+                            className="bg-background border rounded-lg p-4"
+                          >
+                            <div className="flex justify-between items-start mb-4">
+                              <h5 className="font-medium text-sm">
+                                Grupo {groupIndex + 1}
+                              </h5>
                               <button
                                 type="button"
-                                onClick={() => handleRemoveFlavor(flavor.id)}
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    comboConfig: {
+                                      ...prev.comboConfig,
+                                      groups: prev.comboConfig.groups.filter(
+                                        (g) => g.id !== group.id,
+                                      ),
+                                    },
+                                  }));
+                                }}
                                 className="text-destructive hover:bg-destructive/10 p-1 rounded"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
-                          ))}
-                        </div>
-                      )}
 
-                      {/* Adicionar Novo Sabor */}
-                      <div className="flex gap-2 items-end">
-                        <div className="flex-1">
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Nome do Sabor
-                          </label>
-                          <input
-                            type="text"
-                            value={newFlavor.name}
-                            onChange={(e) =>
-                              setNewFlavor((prev) => ({
-                                ...prev,
-                                name: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                            placeholder="Ex: Bacon"
-                          />
-                        </div>
-                        <div className="w-24">
-                          <label className="text-xs text-muted-foreground mb-1 block">
-                            Valor (+)
-                          </label>
-                          <input
-                            type="number"
-                            value={newFlavor.price}
-                            onChange={(e) =>
-                              setNewFlavor((prev) => ({
-                                ...prev,
-                                price: e.target.value,
-                              }))
-                            }
-                            className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={handleAddFlavor}
-                          size="sm"
-                          variant="secondary"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Seção de Combo */}
-                  {formData.productType === "combo" && (
-                    <div className="mt-4 p-4 bg-secondary/50 rounded-lg border">
-                      <h4 className="font-medium text-sm mb-3">
-                        Configuração do Combo
-                      </h4>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Adicione grupos de escolha para o combo (ex: "Escolha 2
-                        Lanches", "Adicionais Obrigatórios").
-                      </p>
-
-                      <div className="space-y-4">
-                        {formData.comboConfig?.groups?.map(
-                          (group, groupIndex) => (
-                            <div
-                              key={group.id}
-                              className="bg-background border rounded-lg p-4"
-                            >
-                              <div className="flex justify-between items-start mb-4">
-                                <h5 className="font-medium text-sm">
-                                  Grupo {groupIndex + 1}
-                                </h5>
-                                <button
-                                  type="button"
-                                  onClick={() => {
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">
+                                  Título do Grupo
+                                </label>
+                                <input
+                                  type="text"
+                                  value={group.title}
+                                  onChange={(e) => {
+                                    const newGroups = [
+                                      ...formData.comboConfig.groups,
+                                    ];
+                                    newGroups[groupIndex].title =
+                                      e.target.value;
                                     setFormData((prev) => ({
                                       ...prev,
                                       comboConfig: {
                                         ...prev.comboConfig,
-                                        groups: prev.comboConfig.groups.filter(
-                                          (g) => g.id !== group.id,
-                                        ),
+                                        groups: newGroups,
                                       },
                                     }));
                                   }}
-                                  className="text-destructive hover:bg-destructive/10 p-1 rounded"
+                                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                                  placeholder="Ex: Escolha seu Lanche"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">
+                                  Tipo de Escolha
+                                </label>
+                                <select
+                                  value={group.type}
+                                  onChange={(e) => {
+                                    const newGroups = [
+                                      ...formData.comboConfig.groups,
+                                    ];
+                                    newGroups[groupIndex].type = e.target
+                                      .value as any;
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      comboConfig: {
+                                        ...prev.comboConfig,
+                                        groups: newGroups,
+                                      },
+                                    }));
+                                  }}
+                                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                                  <option value="products">
+                                    Produtos Cadastrados
+                                  </option>
+                                  <option value="custom">
+                                    Itens Personalizados
+                                  </option>
+                                </select>
                               </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div>
-                                  <label className="text-xs text-muted-foreground mb-1 block">
-                                    Título do Grupo
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={group.title}
-                                    onChange={(e) => {
-                                      const newGroups = [
-                                        ...formData.comboConfig.groups,
-                                      ];
-                                      newGroups[groupIndex].title =
-                                        e.target.value;
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        comboConfig: {
-                                          ...prev.comboConfig,
-                                          groups: newGroups,
-                                        },
-                                      }));
-                                    }}
-                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                                    placeholder="Ex: Escolha seu Lanche"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground mb-1 block">
-                                    Tipo de Escolha
-                                  </label>
-                                  <select
-                                    value={group.type}
-                                    onChange={(e) => {
-                                      const newGroups = [
-                                        ...formData.comboConfig.groups,
-                                      ];
-                                      newGroups[groupIndex].type = e.target
-                                        .value as any;
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        comboConfig: {
-                                          ...prev.comboConfig,
-                                          groups: newGroups,
-                                        },
-                                      }));
-                                    }}
-                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                                  >
-                                    <option value="products">
-                                      Produtos Cadastrados
-                                    </option>
-                                    <option value="custom">
-                                      Itens Personalizados
-                                    </option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground mb-1 block">
-                                    Mínimo
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={group.min}
-                                    onChange={(e) => {
-                                      const newGroups = [
-                                        ...formData.comboConfig.groups,
-                                      ];
-                                      newGroups[groupIndex].min =
-                                        e.target.value;
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        comboConfig: {
-                                          ...prev.comboConfig,
-                                          groups: newGroups,
-                                        },
-                                      }));
-                                    }}
-                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                                    min="0"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-muted-foreground mb-1 block">
-                                    Máximo
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={group.max}
-                                    onChange={(e) => {
-                                      const newGroups = [
-                                        ...formData.comboConfig.groups,
-                                      ];
-                                      newGroups[groupIndex].max =
-                                        e.target.value;
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        comboConfig: {
-                                          ...prev.comboConfig,
-                                          groups: newGroups,
-                                        },
-                                      }));
-                                    }}
-                                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
-                                    min="1"
-                                  />
-                                </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">
+                                  Mínimo
+                                </label>
+                                <input
+                                  type="number"
+                                  value={group.min}
+                                  onChange={(e) => {
+                                    const newGroups = [
+                                      ...formData.comboConfig.groups,
+                                    ];
+                                    newGroups[groupIndex].min = e.target.value;
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      comboConfig: {
+                                        ...prev.comboConfig,
+                                        groups: newGroups,
+                                      },
+                                    }));
+                                  }}
+                                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                                  min="0"
+                                />
                               </div>
-
-                              {/* Group Content Based on Type */}
-                              {group.type === "products" ? (
-                                <div className="border rounded-lg p-3 max-h-40 overflow-y-auto bg-background">
-                                  <label className="text-xs text-muted-foreground mb-2 block">
-                                    Selecione os produtos disponíveis:
-                                  </label>
-                                  {products.map((product) => (
-                                    <label
-                                      key={product.id}
-                                      className="flex items-center gap-2 py-1 hover:bg-secondary/50 rounded px-1 cursor-pointer"
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={(
-                                          group.productIds || []
-                                        ).includes(product.id)}
-                                        onChange={(e) => {
-                                          const newGroups = [
-                                            ...formData.comboConfig.groups,
-                                          ];
-                                          const currentIds =
-                                            newGroups[groupIndex].productIds ||
-                                            [];
-                                          if (e.target.checked) {
-                                            newGroups[groupIndex].productIds = [
-                                              ...currentIds,
-                                              product.id,
-                                            ];
-                                          } else {
-                                            newGroups[groupIndex].productIds =
-                                              currentIds.filter(
-                                                (id) => id !== product.id,
-                                              );
-                                          }
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            comboConfig: {
-                                              ...prev.comboConfig,
-                                              groups: newGroups,
-                                            },
-                                          }));
-                                        }}
-                                        className="rounded border-gray-300 text-primary focus:ring-primary"
-                                      />
-                                      <span className="text-sm">
-                                        {product.name}
-                                      </span>
-                                    </label>
-                                  ))}
-                                </div>
-                              ) : (
-                                <div className="space-y-3">
-                                  <label className="text-xs text-muted-foreground block">
-                                    Opções Personalizadas:
-                                  </label>
-                                  {group.options?.map((option, optIndex) => (
-                                    <div
-                                      key={option.id}
-                                      className="flex gap-2 items-center"
-                                    >
-                                      <input
-                                        type="text"
-                                        value={option.name}
-                                        onChange={(e) => {
-                                          const newGroups = [
-                                            ...formData.comboConfig.groups,
-                                          ];
-                                          newGroups[groupIndex].options[
-                                            optIndex
-                                          ].name = e.target.value;
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            comboConfig: {
-                                              ...prev.comboConfig,
-                                              groups: newGroups,
-                                            },
-                                          }));
-                                        }}
-                                        className="flex-1 px-2 py-1 rounded border text-sm"
-                                        placeholder="Nome (ex: Batata)"
-                                      />
-                                      <input
-                                        type="number"
-                                        value={option.price}
-                                        onChange={(e) => {
-                                          const newGroups = [
-                                            ...formData.comboConfig.groups,
-                                          ];
-                                          newGroups[groupIndex].options[
-                                            optIndex
-                                          ].price = e.target.value;
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            comboConfig: {
-                                              ...prev.comboConfig,
-                                              groups: newGroups,
-                                            },
-                                          }));
-                                        }}
-                                        className="w-24 px-2 py-1 rounded border text-sm"
-                                        placeholder="0.00"
-                                        step="0.01"
-                                      />
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newGroups = [
-                                            ...formData.comboConfig.groups,
-                                          ];
-                                          newGroups[groupIndex].options =
-                                            newGroups[
-                                              groupIndex
-                                            ].options.filter(
-                                              (_, i) => i !== optIndex,
-                                            );
-                                          setFormData((prev) => ({
-                                            ...prev,
-                                            comboConfig: {
-                                              ...prev.comboConfig,
-                                              groups: newGroups,
-                                            },
-                                          }));
-                                        }}
-                                        className="text-destructive p-1"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
-                                    </div>
-                                  ))}
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      const newGroups = [
-                                        ...formData.comboConfig.groups,
-                                      ];
-                                      if (!newGroups[groupIndex].options)
-                                        newGroups[groupIndex].options = [];
-                                      newGroups[groupIndex].options.push({
-                                        id: Math.random()
-                                          .toString(36)
-                                          .substr(2, 9),
-                                        name: "",
-                                        price: "",
-                                      });
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        comboConfig: {
-                                          ...prev.comboConfig,
-                                          groups: newGroups,
-                                        },
-                                      }));
-                                    }}
-                                    className="w-full"
-                                  >
-                                    <Plus className="h-3 w-3 mr-2" /> Adicionar
-                                    Opção
-                                  </Button>
-                                </div>
-                              )}
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">
+                                  Máximo
+                                </label>
+                                <input
+                                  type="number"
+                                  value={group.max}
+                                  onChange={(e) => {
+                                    const newGroups = [
+                                      ...formData.comboConfig.groups,
+                                    ];
+                                    newGroups[groupIndex].max = e.target.value;
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      comboConfig: {
+                                        ...prev.comboConfig,
+                                        groups: newGroups,
+                                      },
+                                    }));
+                                  }}
+                                  className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                                  min="1"
+                                />
+                              </div>
                             </div>
-                          ),
-                        )}
 
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              comboConfig: {
-                                ...prev.comboConfig,
-                                groups: [
-                                  ...prev.comboConfig.groups,
-                                  {
-                                    id: Math.random().toString(36).substr(2, 9),
-                                    title: "",
-                                    type: "products",
-                                    min: "1",
-                                    max: "1",
-                                    productIds: [],
-                                    options: [],
-                                  },
-                                ],
-                              },
-                            }));
-                          }}
-                          className="w-full border-dashed border-2"
-                        >
-                          <Plus className="h-4 w-4 mr-2" /> Adicionar Grupo ao
-                          Combo
-                        </Button>
-                      </div>
+                            {/* Group Content Based on Type */}
+                            {group.type === "products" ? (
+                              <div className="border rounded-lg p-3 max-h-40 overflow-y-auto bg-background">
+                                <label className="text-xs text-muted-foreground mb-2 block">
+                                  Selecione os produtos disponíveis:
+                                </label>
+                                {products.map((product) => (
+                                  <label
+                                    key={product.id}
+                                    className="flex items-center gap-2 py-1 hover:bg-secondary/50 rounded px-1 cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={(
+                                        group.productIds || []
+                                      ).includes(product.id)}
+                                      onChange={(e) => {
+                                        const newGroups = [
+                                          ...formData.comboConfig.groups,
+                                        ];
+                                        const currentIds =
+                                          newGroups[groupIndex].productIds ||
+                                          [];
+                                        if (e.target.checked) {
+                                          newGroups[groupIndex].productIds = [
+                                            ...currentIds,
+                                            product.id,
+                                          ];
+                                        } else {
+                                          newGroups[groupIndex].productIds =
+                                            currentIds.filter(
+                                              (id) => id !== product.id,
+                                            );
+                                        }
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          comboConfig: {
+                                            ...prev.comboConfig,
+                                            groups: newGroups,
+                                          },
+                                        }));
+                                      }}
+                                      className="rounded border-gray-300 text-primary focus:ring-primary"
+                                    />
+                                    <span className="text-sm">
+                                      {product.name}
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <label className="text-xs text-muted-foreground block">
+                                  Opções Personalizadas:
+                                </label>
+                                {group.options?.map((option, optIndex) => (
+                                  <div
+                                    key={option.id}
+                                    className="flex gap-2 items-center"
+                                  >
+                                    <input
+                                      type="text"
+                                      value={option.name}
+                                      onChange={(e) => {
+                                        const newGroups = [
+                                          ...formData.comboConfig.groups,
+                                        ];
+                                        newGroups[groupIndex].options[
+                                          optIndex
+                                        ].name = e.target.value;
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          comboConfig: {
+                                            ...prev.comboConfig,
+                                            groups: newGroups,
+                                          },
+                                        }));
+                                      }}
+                                      className="flex-1 px-2 py-1 rounded border text-sm"
+                                      placeholder="Nome (ex: Batata)"
+                                    />
+                                    <input
+                                      type="number"
+                                      value={option.price}
+                                      onChange={(e) => {
+                                        const newGroups = [
+                                          ...formData.comboConfig.groups,
+                                        ];
+                                        newGroups[groupIndex].options[
+                                          optIndex
+                                        ].price = e.target.value;
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          comboConfig: {
+                                            ...prev.comboConfig,
+                                            groups: newGroups,
+                                          },
+                                        }));
+                                      }}
+                                      className="w-24 px-2 py-1 rounded border text-sm"
+                                      placeholder="0.00"
+                                      step="0.01"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newGroups = [
+                                          ...formData.comboConfig.groups,
+                                        ];
+                                        newGroups[groupIndex].options =
+                                          newGroups[groupIndex].options.filter(
+                                            (_, i) => i !== optIndex,
+                                          );
+                                        setFormData((prev) => ({
+                                          ...prev,
+                                          comboConfig: {
+                                            ...prev.comboConfig,
+                                            groups: newGroups,
+                                          },
+                                        }));
+                                      }}
+                                      className="text-destructive p-1"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newGroups = [
+                                      ...formData.comboConfig.groups,
+                                    ];
+                                    if (!newGroups[groupIndex].options)
+                                      newGroups[groupIndex].options = [];
+                                    newGroups[groupIndex].options.push({
+                                      id: Math.random()
+                                        .toString(36)
+                                        .substr(2, 9),
+                                      name: "",
+                                      price: "",
+                                    });
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      comboConfig: {
+                                        ...prev.comboConfig,
+                                        groups: newGroups,
+                                      },
+                                    }));
+                                  }}
+                                  className="w-full"
+                                >
+                                  <Plus className="h-3 w-3 mr-2" /> Adicionar
+                                  Opção
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">

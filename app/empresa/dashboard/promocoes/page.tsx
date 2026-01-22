@@ -268,7 +268,7 @@ export default function PromocoesPage() {
           },
         });
       } else {
-        alert("Erro ao salvar combo");
+        alert(result.error || "Erro ao salvar combo");
       }
     } catch (error) {
       console.error("Failed to create/update combo", error);
@@ -294,9 +294,9 @@ export default function PromocoesPage() {
           ...g,
           min: g.min.toString(),
           max: g.max.toString(),
-          options: g.options.map((o: any) => ({
+          options: (g.options || []).map((o: any) => ({
             ...o,
-            price: o.priceModifier.toString(),
+            price: (o.priceModifier ?? 0).toString(),
           })),
         })),
       },
@@ -588,6 +588,25 @@ export default function PromocoesPage() {
                       setComboFormData({
                         ...comboFormData,
                         name: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Preço
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    step="0.01"
+                    min="0"
+                    className="w-full p-2 border rounded bg-background"
+                    value={comboFormData.price}
+                    onChange={(e) =>
+                      setComboFormData({
+                        ...comboFormData,
+                        price: e.target.value,
                       })
                     }
                   />

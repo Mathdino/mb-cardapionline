@@ -77,7 +77,11 @@ export async function createProduct(companyId: string, data: any) {
     return { success: true, product };
   } catch (error) {
     console.error("Error creating product:", error);
-    return { success: false, error: "Failed to create product" };
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to create product",
+    };
   }
 }
 

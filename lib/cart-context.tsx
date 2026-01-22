@@ -83,9 +83,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         );
 
         let unitPrice =
-          product.isPromotion && product.promotionalPrice
-            ? product.promotionalPrice
-            : product.price;
+          product.productType === "flavors"
+            ? 0
+            : product.isPromotion && product.promotionalPrice
+              ? product.promotionalPrice
+              : product.price;
 
         effectiveFlavors.forEach((f) => {
           unitPrice += f.priceModifier;
@@ -141,9 +143,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         prev.map((item) => {
           if (item.cartItemId === cartItemId) {
             let unitPrice =
-              item.product.isPromotion && item.product.promotionalPrice
-                ? item.product.promotionalPrice
-                : item.product.price;
+              item.product.productType === "flavors"
+                ? 0
+                : item.product.isPromotion && item.product.promotionalPrice
+                  ? item.product.promotionalPrice
+                  : item.product.price;
 
             if (item.selectedFlavors && item.selectedFlavors.length > 0) {
               item.selectedFlavors.forEach((f) => {

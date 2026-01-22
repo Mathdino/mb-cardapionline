@@ -55,6 +55,10 @@ export async function getCroppedImg(
   canvas.width = bBoxWidth;
   canvas.height = bBoxHeight;
 
+  // Fill background with white
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   // translate canvas context to a central location to allow rotating and flipping around the center
   ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
   ctx.rotate(rotRad);

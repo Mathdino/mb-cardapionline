@@ -36,7 +36,8 @@ export default async function Page({ params }: PageProps) {
   ]);
 
   const categories = allCategories.filter(
-    (c) => c.name.toLowerCase() !== "combos" && c.name.toLowerCase() !== "combo",
+    (c) =>
+      c.name.toLowerCase() !== "combos" && c.name.toLowerCase() !== "combo",
   );
 
   return (

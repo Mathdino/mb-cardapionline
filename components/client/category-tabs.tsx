@@ -42,7 +42,7 @@ export function CategoryTabs({ categories, activeCategory, onCategoryChange }: C
   }, [activeCategory])
 
   return (
-    <div className="sticky top-0 z-20 bg-background border-b">
+    <div className="sticky top-16 z-20 bg-background border-b shadow-sm">
       <div className="relative">
         {showLeftShadow && (
           <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
@@ -54,7 +54,7 @@ export function CategoryTabs({ categories, activeCategory, onCategoryChange }: C
         <div 
           ref={scrollRef}
           onScroll={handleScroll}
-          className="flex overflow-x-auto scrollbar-hide py-3 px-4 gap-2"
+          className="flex overflow-x-auto scrollbar-hide"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {categories.map(category => (
@@ -62,10 +62,10 @@ export function CategoryTabs({ categories, activeCategory, onCategoryChange }: C
               key={category.id}
               id={`tab-${category.id}`}
               onClick={() => onCategoryChange(category.id)}
-              className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              className={`whitespace-nowrap px-4 py-3 text-sm font-bold uppercase transition-colors border-b-2 ${
                 activeCategory === category.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  ? 'border-red-600 text-red-600'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {category.name}

@@ -65,7 +65,12 @@ export function ProductModal({
     product.promotionalPrice > 0;
 
   const getUnitPrice = () => {
-    let price = hasPromotion ? product.promotionalPrice! : product.price;
+    let price =
+      product.productType === "flavors"
+        ? 0
+        : hasPromotion
+          ? product.promotionalPrice!
+          : product.price;
 
     selectedFlavors.forEach((flavor) => {
       price += flavor.priceModifier;

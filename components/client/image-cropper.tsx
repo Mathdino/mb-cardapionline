@@ -76,7 +76,7 @@ export function ImageCropper({
           <DialogTitle>Editar Imagem</DialogTitle>
         </DialogHeader>
 
-        <div className="relative h-[400px] w-full bg-black mt-4">
+        <div className="relative h-[400px] w-full bg-white mt-4">
           {imageSrc && (
             <Cropper
               image={imageSrc}

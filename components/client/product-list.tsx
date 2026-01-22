@@ -11,6 +11,7 @@ interface ProductListProps {
   products: Product[];
   activeCategory: string;
   onCategoryChange: (categoryId: string) => void;
+  scrollTrigger?: { id: string; ts: number } | null;
 }
 
 export function ProductList({
@@ -18,6 +19,7 @@ export function ProductList({
   products,
   activeCategory,
   onCategoryChange,
+  scrollTrigger,
 }: ProductListProps) {
   const [expandedCategories, setExpandedCategories] = useState<
     Record<string, boolean>
@@ -32,20 +34,22 @@ export function ProductList({
     }));
   };
 
-  // Scroll to category when active category changes
+  // Scroll to category when scrollTrigger changes
   useEffect(() => {
-    const categoryElement = categoryRefs.current[activeCategory];
-    if (categoryElement) {
-      const headerOffset = 60; // Sticky tabs height
-      const elementPosition = categoryElement.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.scrollY - headerOffset;
+    if (scrollTrigger?.id) {
+      const categoryElement = categoryRefs.current[scrollTrigger.id];
+      if (categoryElement) {
+        const headerOffset = 60; // Sticky tabs height
+        const elementPosition = categoryElement.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.scrollY - headerOffset;
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      }
     }
-  }, [activeCategory]);
+  }, [scrollTrigger]);
 
   // Update active category based on scroll position
   useEffect(() => {
@@ -92,7 +96,7 @@ export function ProductList({
               {/* Category Header */}
               <button
                 onClick={() => toggleCategory(category.id)}
-                className="w-full flex items-center justify-between p-4 bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-secondary/20 transition-colors"
               >
                 <h2 className="text-lg font-bold text-foreground">
                   {category.name}
