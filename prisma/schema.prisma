@@ -27,8 +27,31 @@ model Company {
   categories     Category[]
   products       Product[]
   promotions     Promotion[]
+  coupons        Coupon[]
   orders         Order[]
   users          User[]
+}
+
+model Coupon {
+  id          String   @id @default(uuid())
+  companyId   String
+  code        String
+  type        String   // 'percentage' | 'fixed'
+  value       Float
+  minOrderValue Float?
+  maxDiscount Float?
+  startDate   DateTime?
+  expirationDate DateTime?
+  usageLimit  Int?     // Total number of times this coupon can be used
+  usageCount  Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company  @relation(fields: [companyId], references: [id])
+  orders      Order[]
+
+  @@unique([companyId, code])
 }
 
 model User {
@@ -149,6 +172,9 @@ model Order {
   status        String
   paymentMethod String
   notes         String?
+  discount      Float?
+  couponId      String?
+  coupon        Coupon?  @relation(fields: [couponId], references: [id])
   createdAt     DateTime @default(now())
   
   userId        String?

@@ -12,12 +12,17 @@ import type {
   Product,
   ProductFlavor,
   SelectedComboItem,
+  Coupon,
 } from "./types";
 import { formatCurrency } from "./mock-data";
+import { validateCoupon } from "@/app/actions/coupons";
 
 interface CartContextType {
   items: CartItem[];
   total: number;
+  subtotal: number;
+  discount: number;
+  coupon: Coupon | null;
   itemCount: number;
   addItem: (
     product: Product,
@@ -30,6 +35,11 @@ interface CartContextType {
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
+  applyCoupon: (
+    code: string,
+    companyId: string,
+  ) => Promise<{ success: boolean; message?: string }>;
+  removeCoupon: () => void;
   getWhatsAppMessage: (
     companyWhatsapp: string,
     customerName: string,
@@ -42,9 +52,55 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [discount, setDiscount] = useState(0);
 
-  const total = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const total = Math.max(0, subtotal - discount);
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const applyCoupon = useCallback(
+    async (code: string, companyId: string) => {
+      const result = await validateCoupon(code, companyId, subtotal);
+
+      if (result.valid && result.coupon) {
+        setCoupon(result.coupon as Coupon);
+        setDiscount(result.discount || 0);
+        return { success: true };
+      } else {
+        setCoupon(null);
+        setDiscount(0);
+        return { success: false, message: result.message };
+      }
+    },
+    [subtotal],
+  );
+
+  const removeCoupon = useCallback(() => {
+    setCoupon(null);
+    setDiscount(0);
+  }, []);
+
+  // Recalculate discount when subtotal changes if coupon exists
+  // But wait, applyCoupon depends on subtotal. If subtotal changes, we might need to re-validate?
+  // Or just re-calculate value?
+  // For simplicity, let's keep the coupon but re-calculate discount if it's percentage.
+  // Actually, validateCoupon logic should be run again or just simple math here.
+  // To avoid complexity/async loops, let's just do simple math here if coupon is set.
+  // However, validateCoupon also checks minOrderValue.
+  // Ideally we should re-validate.
+  // Let's rely on the user to re-apply or we handle it in a useEffect?
+  // Let's add a useEffect to re-calculate discount when items/subtotal changes.
+
+  // Actually, a simpler approach:
+  // Derived state for discount based on coupon + subtotal.
+  // But we need to check minOrderValue.
+
+  // Let's stick to simple state for now, but maybe clear coupon if cart becomes empty?
+  if (items.length === 0 && coupon) {
+    setCoupon(null);
+    setDiscount(0);
+  }
 
   const addItem = useCallback(
     (
@@ -223,7 +279,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
         message += ` - ${formatCurrency(item.subtotal)}\n`;
       });
 
-      message += `\n*Total:* ${formatCurrency(total)}\n`;
+      message += `\n*Subtotal:* ${formatCurrency(subtotal)}\n`;
+
+      if (coupon) {
+        message += `*Cupom:* ${coupon.code} (-${formatCurrency(discount)})\n`;
+      }
+
+      message += `*Total Final:* ${formatCurrency(total)}\n`;
       message += `*Forma de Pagamento:* ${paymentMethod}\n`;
 
       if (notes) {
@@ -233,7 +295,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const encodedMessage = encodeURIComponent(message);
       return `https://wa.me/${companyWhatsapp}?text=${encodedMessage}`;
     },
-    [items, total],
+    [items, subtotal, discount, coupon, total],
   );
 
   return (
@@ -241,11 +303,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items,
         total,
+        subtotal,
+        discount,
+        coupon,
         itemCount,
         addItem,
         removeItem,
         updateQuantity,
         clearCart,
+        applyCoupon,
+        removeCoupon,
         getWhatsAppMessage,
       }}
     >

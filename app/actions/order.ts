@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 import { OrderItem, PaymentMethod } from "@/lib/types";
+import { incrementCouponUsage } from "./coupons";
 
 interface CreateOrderData {
   companyId: string;
@@ -16,6 +17,8 @@ interface CreateOrderData {
   paymentMethod: PaymentMethod;
   notes?: string;
   userId?: string;
+  couponId?: string;
+  discount?: number;
 }
 
 function generateOrderId(): string {
@@ -44,6 +47,8 @@ export async function createOrder(data: CreateOrderData) {
       paymentMethod,
       notes,
       userId,
+      couponId,
+      discount,
     } = data;
 
     // Validate company exists
@@ -83,6 +88,8 @@ export async function createOrder(data: CreateOrderData) {
             paymentMethod,
             notes: notes || "",
             userId: userId || null,
+            couponId: couponId || null,
+            discount: discount || 0,
           },
         });
         break;
@@ -98,14 +105,18 @@ export async function createOrder(data: CreateOrderData) {
     }
 
     if (!order) {
-      throw new Error("Failed to generate unique Order ID");
+      return { success: false, error: "Failed to generate unique Order ID" };
     }
 
-    // Revalidate dashboard
-    revalidatePath("/empresa/dashboard");
-    revalidatePath("/empresa/dashboard/pedidos");
+    // Increment coupon usage if coupon was used
+    if (couponId) {
+      await incrementCouponUsage(couponId);
+    }
 
-    return { success: true, order };
+    revalidatePath("/empresa/dashboard/pedidos");
+    revalidatePath(`/loja/${company.slug}`);
+
+    return { success: true, orderId: order.id };
   } catch (error) {
     console.error("Error creating order:", error);
     return { success: false, error: "Failed to create order" };

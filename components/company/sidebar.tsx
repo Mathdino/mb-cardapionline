@@ -8,6 +8,7 @@ import {
   Grid3X3,
   Package,
   Tag,
+  TicketPercent,
   DollarSign,
   Building2,
   LogOut,
@@ -29,6 +30,11 @@ const menuItems = [
     icon: Tag,
     label: "Promoções e Combos",
     href: "/empresa/dashboard/promocoes",
+  },
+  {
+    icon: TicketPercent,
+    label: "Cupons",
+    href: "/empresa/dashboard/cupons",
   },
   {
     icon: DollarSign,

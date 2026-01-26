@@ -47,15 +47,22 @@ export function CartSheet({ company }: CartSheetProps) {
   const [showCheckout, setShowCheckout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPrefilled, setHasPrefilled] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const { data: session } = useSession();
 
   const {
     items,
     total,
+    subtotal,
+    discount,
+    coupon,
     itemCount,
     removeItem,
     updateQuantity,
     clearCart,
+    applyCoupon,
+    removeCoupon,
     getWhatsAppMessage,
   } = useCart();
 
@@ -81,6 +88,25 @@ export function CartSheet({ company }: CartSheetProps) {
       setHasPrefilled(true);
     }
   }, [session, hasPrefilled]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+
+    setIsApplyingCoupon(true);
+    try {
+      const result = await applyCoupon(couponCode, company.id);
+      if (!result.success) {
+        alert(result.message || "Erro ao aplicar cupom");
+      } else {
+        setCouponCode("");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao validar cupom");
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
 
   const handleCheckout = async () => {
     if (!company.isOpen) {
@@ -138,6 +164,8 @@ export function CartSheet({ company }: CartSheetProps) {
         paymentMethod,
         notes,
         userId: session?.user?.id,
+        couponId: coupon?.id,
+        discount,
       });
 
       if (!result.success) {
@@ -165,6 +193,11 @@ export function CartSheet({ company }: CartSheetProps) {
           message += `  - Sem: ${item.removedIngredients.join(", ")}\n`;
         }
       });
+
+      if (coupon) {
+        message += `\n*Cupom:* ${coupon.code}`;
+        message += `\n*Desconto:* -${formatCurrency(discount)}`;
+      }
 
       message += `\n*Total:* ${formatCurrency(total)}\n`;
       message += `*Pagamento:* ${paymentMethodLabels[paymentMethod]}\n`;
@@ -359,11 +392,71 @@ export function CartSheet({ company }: CartSheetProps) {
                 {/* Footer */}
                 {items.length > 0 && (
                   <div className="p-4 border-t bg-background">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-muted-foreground">Total</span>
-                      <span className="text-xl font-bold text-foreground">
-                        {formatCurrency(total)}
-                      </span>
+                    {/* Coupon Section */}
+                    <div className="mb-4">
+                      {coupon ? (
+                        <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-medium text-green-700 dark:text-green-400">
+                              Cupom aplicado
+                            </span>
+                            <span className="font-bold text-green-700 dark:text-green-400">
+                              {coupon.code}
+                            </span>
+                          </div>
+                          <button
+                            onClick={removeCoupon}
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Código do cupom"
+                            value={couponCode}
+                            onChange={(e) =>
+                              setCouponCode(e.target.value.toUpperCase())
+                            }
+                            className="flex-1 px-3 py-2 text-sm border rounded-lg bg-background uppercase"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleApplyCoupon}
+                            disabled={!couponCode || isApplyingCoupon}
+                          >
+                            {isApplyingCoupon ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              "Aplicar"
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1 mb-4">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span>{formatCurrency(subtotal)}</span>
+                      </div>
+                      {coupon && (
+                        <div className="flex items-center justify-between text-sm text-green-600">
+                          <span>Desconto</span>
+                          <span>- {formatCurrency(discount)}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between pt-2 border-t mt-2">
+                        <span className="text-base font-bold text-foreground">
+                          Total
+                        </span>
+                        <span className="text-xl font-bold text-foreground">
+                          {formatCurrency(total)}
+                        </span>
+                      </div>
                     </div>
 
                     {total < company.minimumOrder && (

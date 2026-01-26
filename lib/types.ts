@@ -105,12 +105,16 @@ export interface Order {
   companyId: string;
   customerName: string;
   customerPhone: string;
+  customerCpf?: string;
+  deliveryAddress?: Address;
   items: OrderItem[];
   total: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   notes?: string;
   createdAt: Date;
+  discount?: number;
+  couponId?: string;
 }
 
 export interface OrderItem {
@@ -174,6 +178,23 @@ export interface Promotion {
   startDate: Date;
   endDate: Date;
   isActive: boolean;
+}
+
+export interface Coupon {
+  id: string;
+  companyId: string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  minOrderValue?: number | null;
+  maxDiscount?: number | null;
+  startDate?: Date | null;
+  expirationDate?: Date | null;
+  usageLimit?: number | null;
+  usageCount: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Financial Types

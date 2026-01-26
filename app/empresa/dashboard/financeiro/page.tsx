@@ -37,6 +37,9 @@ export default function FinanceiroPage() {
   const [period, setPeriod] = useState<FilterPeriod>("month");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toISOString().slice(0, 7),
+  );
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLegendModalOpen, setIsLegendModalOpen] = useState(false);
@@ -83,17 +86,33 @@ export default function FinanceiroPage() {
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       case "month":
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        if (selectedMonth) {
+          const [year, month] = selectedMonth.split("-").map(Number);
+          startDate = new Date(year, month - 1, 1);
+          endDate = new Date(year, month, 0, 23, 59, 59, 999);
+        } else {
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        }
         break;
       case "year":
         startDate = new Date(now.getFullYear(), 0, 1);
         break;
       case "custom":
         if (customStartDate && customEndDate) {
-          startDate = new Date(customStartDate);
-          endDate = new Date(customEndDate);
+          // Parse YYYY-MM-DD to local start of day
+          const [startYear, startMonth, startDay] = customStartDate
+            .split("-")
+            .map(Number);
+          startDate = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
+
+          // Parse YYYY-MM-DD to local end of day
+          const [endYear, endMonth, endDay] = customEndDate
+            .split("-")
+            .map(Number);
+          endDate = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
         } else {
-          return orders;
+          // If dates are not selected, show all history
+          startDate = new Date(0);
         }
         break;
       default:
@@ -107,7 +126,7 @@ export default function FinanceiroPage() {
       const orderDate = new Date(order.createdAt);
       return orderDate >= startDate && orderDate <= endDate;
     });
-  }, [orders, period, customStartDate, customEndDate]);
+  }, [orders, period, customStartDate, customEndDate, selectedMonth]);
 
   if (!company) return null;
 
@@ -180,7 +199,7 @@ export default function FinanceiroPage() {
           <div className="flex flex-1 gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             {[
               { value: "week", label: "Última Semana" },
-              { value: "month", label: "Este Mês" },
+              { value: "month", label: "Mensal" },
               { value: "year", label: "Este Ano" },
               { value: "custom", label: "Personalizado" },
             ].map((option) => (
@@ -198,6 +217,22 @@ export default function FinanceiroPage() {
             ))}
           </div>
         </div>
+
+        {period === "month" && (
+          <div className="mt-4 pt-4 border-t">
+            <div className="w-full sm:w-auto">
+              <label className="block text-sm text-muted-foreground mb-1">
+                Selecione o Mês
+              </label>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full sm:w-64 px-4 py-2 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+        )}
 
         {period === "custom" && (
           <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t">

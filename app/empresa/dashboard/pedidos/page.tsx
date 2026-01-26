@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   formatCurrency,
@@ -8,6 +8,7 @@ import {
   orderStatusColors,
   paymentMethodLabels,
 } from "@/lib/mock-data";
+import { formatPhone, formatCPF } from "@/lib/utils";
 import type { Order, OrderStatus } from "@/lib/types";
 import { Search, Filter, X, Phone, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,11 +27,26 @@ export default function PedidosPage() {
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const previousOrdersRef = useRef<Order[]>([]);
+  const isFirstLoadRef = useRef(true);
+
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio("/audio/notification.mp3");
+      audio.play().catch((err) => console.error("Error playing sound:", err));
+    } catch (error) {
+      console.error("Audio initialization failed:", error);
+    }
+  };
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
     async function fetchOrders() {
       if (company?.id) {
-        setIsLoading(true);
+        // Only show loading on first load
+        if (isFirstLoadRef.current) setIsLoading(true);
+
         try {
           const data = await getOrders(company.id);
           const parsedOrders = data.map((order: any) => ({
@@ -38,7 +54,24 @@ export default function PedidosPage() {
             createdAt: new Date(order.createdAt),
             items: order.items as any,
           }));
+
+          // Check for new orders to play sound
+          if (!isFirstLoadRef.current) {
+            const previousIds = new Set(
+              previousOrdersRef.current.map((o) => o.id),
+            );
+            const hasNewOrder = parsedOrders.some(
+              (o: Order) => !previousIds.has(o.id),
+            );
+
+            if (hasNewOrder) {
+              playNotificationSound();
+            }
+          }
+
+          previousOrdersRef.current = parsedOrders;
           setOrders(parsedOrders);
+          isFirstLoadRef.current = false;
         } catch (error) {
           console.error("Failed to fetch orders", error);
         } finally {
@@ -46,7 +79,13 @@ export default function PedidosPage() {
         }
       }
     }
+
     fetchOrders();
+
+    // Set up polling interval (every 1 minute)
+    intervalId = setInterval(fetchOrders, 60000);
+
+    return () => clearInterval(intervalId);
   }, [company?.id]);
 
   if (!company) return null;
@@ -63,7 +102,6 @@ export default function PedidosPage() {
   const statusOptions: { value: OrderStatus | "all"; label: string }[] = [
     { value: "all", label: "Todos" },
     { value: "pending", label: "Pendentes" },
-    { value: "preparing", label: "Em Preparação" },
     { value: "delivered", label: "Entregues" },
     { value: "cancelled", label: "Cancelados" },
   ];
@@ -211,13 +249,33 @@ export default function PedidosPage() {
                           {formatDate(order.createdAt)}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedOrder(order)}
-                          >
-                            Ver detalhes
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedOrder(order)}
+                            >
+                              Ver detalhes
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-[#25D366] text-white hover:bg-[#1DBF73]"
+                              onClick={() => {
+                                const digits = order.customerPhone.replace(
+                                  /\D/g,
+                                  "",
+                                );
+                                if (!digits) return;
+                                window.open(
+                                  `https://wa.me/${digits}`,
+                                  "_blank",
+                                );
+                              }}
+                            >
+                              WhatsApp
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -243,10 +301,22 @@ export default function PedidosPage() {
                         {orderStatusLabels[order.status]}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>
-                        #{order.id} - {order.items.length} item(s)
-                      </span>
+
+                    <div className="space-y-1 mb-3">
+                      {order.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="text-sm text-muted-foreground flex justify-between"
+                        >
+                          <span>
+                            {item.quantity}x {item.productName}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-2">
+                      <span>#{order.id}</span>
                       <span className="font-medium text-foreground">
                         {formatCurrency(order.total)}
                       </span>
@@ -308,28 +378,26 @@ export default function PedidosPage() {
                     {selectedOrder.customerName}
                   </p>
                   <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    {selectedOrder.customerPhone}
+                    <span className="font-semibold">Telefone:</span>
+                    {formatPhone(selectedOrder.customerPhone)}
                   </div>
                   {selectedOrder.customerCpf && (
                     <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
                       <span className="font-semibold">CPF:</span>
-                      {selectedOrder.customerCpf}
+                      {formatCPF(selectedOrder.customerCpf)}
                     </div>
                   )}
                   {selectedOrder.deliveryAddress && (
-                    <div className="mt-2 text-sm text-muted-foreground">
+                    <div className="mt-1 text-sm text-muted-foreground">
                       <p className="font-semibold">Endereço de Entrega:</p>
                       <p>
                         {selectedOrder.deliveryAddress.street},{" "}
-                        {selectedOrder.deliveryAddress.number}
+                        {selectedOrder.deliveryAddress.number} -{" "}
+                        {selectedOrder.deliveryAddress.neighborhood},{" "}
+                        {selectedOrder.deliveryAddress.city} -{" "}
+                        {selectedOrder.deliveryAddress.state},
+                        {selectedOrder.deliveryAddress.cep}
                       </p>
-                      <p>
-                        {selectedOrder.deliveryAddress.neighborhood} -{" "}
-                        {selectedOrder.deliveryAddress.city}/
-                        {selectedOrder.deliveryAddress.state}
-                      </p>
-                      <p>{selectedOrder.deliveryAddress.cep}</p>
                     </div>
                   )}
                 </div>
@@ -452,6 +520,14 @@ export default function PedidosPage() {
                       {paymentMethodLabels[selectedOrder.paymentMethod]}
                     </span>
                   </div>
+                  {selectedOrder.discount && selectedOrder.discount > 0 && (
+                    <div className="flex justify-between text-sm mb-2 text-green-600">
+                      <span>
+                        Desconto {selectedOrder.couponId ? "(Cupom)" : ""}
+                      </span>
+                      <span>- {formatCurrency(selectedOrder.discount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="font-bold text-foreground">Total</span>
                     <span className="font-bold text-foreground text-lg">
