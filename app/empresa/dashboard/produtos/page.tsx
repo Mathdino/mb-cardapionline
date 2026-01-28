@@ -53,9 +53,11 @@ function ProdutosContent() {
     promotionalPrice: "",
     isPromotion: false,
     categoryId: "",
-    productType: "simple" as "simple" | "flavors" | "combo",
+    productType: "simple" as "simple" | "flavors" | "combo" | "wholesale",
     image: "",
     ingredients: [] as string[],
+    wholesaleMinQuantity: "10",
+    wholesalePrice: "",
     flavors: [] as { id: string; name: string; price: string }[],
     minFlavors: "1",
     maxFlavors: "1",
@@ -197,6 +199,8 @@ function ProdutosContent() {
         productType: product.productType as any,
         image: product.image,
         ingredients: product.ingredients || [],
+        wholesaleMinQuantity: product.wholesaleMinQuantity?.toString() || "10",
+        wholesalePrice: product.wholesalePrice?.toString() || "",
         flavors: Array.isArray(product.flavors)
           ? product.flavors.map((f: any) => ({
               ...f,
@@ -255,6 +259,8 @@ function ProdutosContent() {
         minFlavors: "1",
         maxFlavors: "1",
         comboConfig: { maxItems: "1", options: [], groups: [] },
+        wholesaleMinQuantity: "10",
+        wholesalePrice: "",
       });
     }
     setIsModalOpen(true);
@@ -319,6 +325,14 @@ function ProdutosContent() {
       productType: formData.productType,
       image: formData.image,
       ingredients: formData.ingredients,
+      wholesaleMinQuantity:
+        formData.productType === "wholesale"
+          ? parseInt(formData.wholesaleMinQuantity) || 0
+          : null,
+      wholesalePrice:
+        formData.productType === "wholesale" && formData.wholesalePrice
+          ? parseFloat(formData.wholesalePrice) || 0
+          : null,
       flavors:
         formData.productType === "flavors"
           ? {
@@ -359,6 +373,7 @@ function ProdutosContent() {
     };
 
     try {
+      let success = false;
       if (editingProduct) {
         const result = await updateProduct(
           editingProduct.id,
@@ -369,14 +384,23 @@ function ProdutosContent() {
           setProducts((prev) =>
             prev.map((p) => (p.id === editingProduct.id ? result.product : p)),
           );
+          success = true;
+        } else {
+          alert(`Erro ao atualizar: ${result.error}`);
         }
       } else {
         const result = await createProduct(company.id, productData);
         if (result.success) {
           setProducts((prev) => [...prev, result.product]);
+          success = true;
+        } else {
+          alert(`Erro ao criar: ${result.error}`);
         }
       }
-      handleCloseModal();
+
+      if (success) {
+        handleCloseModal();
+      }
     } catch (error) {
       console.error("Error saving product:", error);
       alert("Erro ao salvar produto");
@@ -845,8 +869,70 @@ function ProdutosContent() {
                         por Quant.
                       </span>
                     </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="productType"
+                        value="wholesale"
+                        checked={formData.productType === "wholesale"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            productType: e.target.value as any,
+                          }))
+                        }
+                        className="text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">Atacado</span>
+                    </label>
                   </div>
                 </div>
+
+                {/* Seção de Atacado */}
+                {formData.productType === "wholesale" && (
+                  <div className="mt-4 p-4 bg-secondary/50 rounded-lg border">
+                    <h4 className="font-medium text-sm mb-3">
+                      Configuração de Atacado
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Quantidade Mínima
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.wholesaleMinQuantity}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              wholesaleMinQuantity: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                          min="2"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Preço de Atacado (R$)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.wholesalePrice}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              wholesalePrice: e.target.value,
+                            }))
+                          }
+                          className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                          placeholder="0.00"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Seção de Sabores */}
                 {formData.productType === "flavors" && (

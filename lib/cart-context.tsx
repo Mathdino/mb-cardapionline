@@ -138,32 +138,43 @@ export function CartProvider({ children }: { children: ReactNode }) {
             (!removedIngredients || removedIngredients.length === 0),
         );
 
-        let unitPrice =
-          product.productType === "flavors"
+        const getBasePrice = (qty: number) => {
+          if (
+            product.productType === "wholesale" &&
+            product.wholesaleMinQuantity &&
+            product.wholesalePrice &&
+            qty >= product.wholesaleMinQuantity
+          ) {
+            return product.wholesalePrice;
+          }
+          return product.productType === "flavors"
             ? 0
             : product.isPromotion && product.promotionalPrice
               ? product.promotionalPrice
               : product.price;
+        };
 
+        let modifiers = 0;
         effectiveFlavors.forEach((f) => {
-          unitPrice += f.priceModifier;
+          modifiers += f.priceModifier;
         });
 
         if (selectedComboItems) {
           selectedComboItems.forEach((comboItem) => {
-            unitPrice += comboItem.priceModifier * comboItem.quantity;
+            modifiers += comboItem.priceModifier * comboItem.quantity;
           });
         }
 
-        const subtotal = unitPrice * quantity;
-
         if (existingIndex >= 0) {
           const updated = [...prev];
-          updated[existingIndex].quantity += quantity;
+          const newQty = updated[existingIndex].quantity + quantity;
+          updated[existingIndex].quantity = newQty;
           updated[existingIndex].subtotal =
-            updated[existingIndex].quantity * unitPrice;
+            newQty * (getBasePrice(newQty) + modifiers);
           return updated;
         }
+
+        const subtotal = quantity * (getBasePrice(quantity) + modifiers);
 
         return [
           ...prev,
@@ -204,6 +215,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 : item.product.isPromotion && item.product.promotionalPrice
                   ? item.product.promotionalPrice
                   : item.product.price;
+
+            if (
+              item.product.productType === "wholesale" &&
+              item.product.wholesaleMinQuantity &&
+              item.product.wholesalePrice &&
+              quantity >= item.product.wholesaleMinQuantity
+            ) {
+              unitPrice = item.product.wholesalePrice;
+            }
 
             if (item.selectedFlavors && item.selectedFlavors.length > 0) {
               item.selectedFlavors.forEach((f) => {

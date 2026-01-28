@@ -477,14 +477,14 @@ export const defaultBusinessHours = [
 
 export const orderStatusLabels: Record<string, string> = {
   pending: "Pendente",
-  preparing: "Em Preparação",
+  preparing: "Preparando",
   delivered: "Entregue",
   cancelled: "Cancelado",
 };
 
 export const orderStatusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  preparing: "bg-blue-100 text-blue-800",
-  delivered: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-800",
+  pending: "bg-yellow-500 text-black-100",
+  preparing: "bg-blue-500 text-blue-100",
+  delivered: "bg-green-500 text-green-100",
+  cancelled: "bg-red-500 text-red-100",
 };

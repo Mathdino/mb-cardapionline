@@ -135,7 +135,11 @@ export default function PedidosPage() {
       newStatus,
     );
 
-    if (!result.success) {
+    if (result.success) {
+      if (newStatus === "delivered") {
+        setSelectedOrder(null);
+      }
+    } else {
       // Revert on failure
       setSelectedOrder(previousOrder);
       setOrders(previousOrders);

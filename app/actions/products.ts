@@ -61,6 +61,7 @@ export async function getStoreProducts(companyId: string) {
 
 export async function createProduct(companyId: string, data: any) {
   try {
+    console.log("Creating product with data:", JSON.stringify(data, null, 2));
     const processedData = { ...data };
     if (processedData.flavors === null) processedData.flavors = Prisma.DbNull;
     if (processedData.comboConfig === null)
@@ -87,6 +88,7 @@ export async function createProduct(companyId: string, data: any) {
 
 export async function updateProduct(id: string, companyId: string, data: any) {
   try {
+    console.log("Updating product with data:", JSON.stringify(data, null, 2));
     const existing = await prisma.product.findFirst({
       where: { id, companyId },
     });

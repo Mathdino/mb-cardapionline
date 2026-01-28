@@ -61,12 +61,14 @@ export interface Product {
   price: number;
   promotionalPrice?: number;
   isPromotion: boolean;
-  productType: "simple" | "flavors" | "combo";
+  productType: "simple" | "flavors" | "combo" | "wholesale";
   flavors?:
     | ProductFlavor[]
     | { min: number; max: number; options: ProductFlavor[] };
   comboConfig?: ComboConfig;
   ingredients?: string[];
+  wholesaleMinQuantity?: number;
+  wholesalePrice?: number;
   isAvailable: boolean;
 }
 

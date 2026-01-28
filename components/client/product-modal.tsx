@@ -72,6 +72,15 @@ export function ProductModal({
           ? product.promotionalPrice!
           : product.price;
 
+    if (
+      product.productType === "wholesale" &&
+      product.wholesaleMinQuantity &&
+      product.wholesalePrice &&
+      quantity >= product.wholesaleMinQuantity
+    ) {
+      price = product.wholesalePrice;
+    }
+
     selectedFlavors.forEach((flavor) => {
       price += flavor.priceModifier;
     });
@@ -314,6 +323,21 @@ export function ProductModal({
               )}
             </div>
           </div>
+
+          {/* Wholesale Info */}
+          {product.productType === "wholesale" &&
+            product.wholesaleMinQuantity &&
+            product.wholesalePrice && (
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="font-semibold text-sm mb-1">
+                  Preço de Atacado Disponível!
+                </p>
+                <p className="text-sm">
+                  Compre {product.wholesaleMinQuantity} ou mais unidades e pague
+                  apenas {formatCurrency(product.wholesalePrice)} cada.
+                </p>
+              </div>
+            )}
 
           {/* Ingredients Selection */}
           {product.ingredients && product.ingredients.length > 0 && (

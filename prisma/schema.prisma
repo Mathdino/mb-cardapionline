@@ -139,6 +139,8 @@ model Product {
   flavors          Json?
   comboConfig      Json?
   ingredients      String[]
+  wholesaleMinQuantity Int?
+  wholesalePrice   Float?
   isAvailable      Boolean  @default(true)
   company          Company  @relation(fields: [companyId], references: [id])
   category         Category @relation(fields: [categoryId], references: [id])

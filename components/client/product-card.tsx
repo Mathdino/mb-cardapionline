@@ -51,6 +51,11 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             %
           </div>
         )}
+        {product.productType === "wholesale" && (
+          <div className="absolute top-1 right-1 bg-blue-600 text-white px-1.5 py-0.5 rounded text-xs font-bold">
+            Atacado
+          </div>
+        )}
       </div>
 
       {/* Product Info */}

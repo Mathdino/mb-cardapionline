@@ -27,7 +27,7 @@ import {
 import { getOrders } from "@/app/actions/order";
 import { Order } from "@/lib/types";
 
-type FilterPeriod = "week" | "month" | "year" | "custom";
+type FilterPeriod = "today" | "week" | "month" | "year" | "custom";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
@@ -82,6 +82,26 @@ export default function FinanceiroPage() {
     let endDate = now;
 
     switch (period) {
+      case "today":
+        startDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          0,
+          0,
+          0,
+          0,
+        );
+        endDate = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          23,
+          59,
+          59,
+          999,
+        );
+        break;
       case "week":
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
@@ -198,6 +218,7 @@ export default function FinanceiroPage() {
 
           <div className="flex flex-1 gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             {[
+              { value: "today", label: "Hoje" },
               { value: "week", label: "Última Semana" },
               { value: "month", label: "Mensal" },
               { value: "year", label: "Este Ano" },
