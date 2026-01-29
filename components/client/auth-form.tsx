@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { registerCustomer } from "@/app/actions/customer-auth";
 import { toast } from "sonner";
-import { Chrome } from "lucide-react";
+import Image from "next/image";
 
 export function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
@@ -115,7 +115,13 @@ export function AuthForm() {
         className="w-full mb-4 flex items-center justify-center gap-2"
         onClick={() => signIn("google", { callbackUrl: "/" })}
       >
-        <Chrome className="w-5 h-5" />
+        <Image
+          src="/icon-google.svg"
+          alt="Google"
+          width={20}
+          height={20}
+          className="w-5 h-5"
+        />
         Continuar com Google
       </Button>
 
