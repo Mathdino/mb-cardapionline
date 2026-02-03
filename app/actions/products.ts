@@ -61,11 +61,17 @@ export async function getStoreProducts(companyId: string) {
 
 export async function createProduct(companyId: string, data: any) {
   try {
-    console.log("Creating product with data:", JSON.stringify(data, null, 2));
+    console.log("Creating product - Start");
+    console.log("Company ID:", companyId);
+    console.log("Data size:", JSON.stringify(data).length);
+    // console.log("Data:", JSON.stringify(data, null, 2)); // Too verbose for large images
+
     const processedData = { ...data };
     if (processedData.flavors === null) processedData.flavors = Prisma.DbNull;
     if (processedData.comboConfig === null)
       processedData.comboConfig = Prisma.DbNull;
+    if (processedData.complements === null)
+      processedData.complements = Prisma.DbNull;
 
     const product = await prisma.product.create({
       data: {
@@ -73,6 +79,8 @@ export async function createProduct(companyId: string, data: any) {
         ...processedData,
       },
     });
+
+    console.log("Product created successfully:", product.id);
 
     // Revalidate dashboard paths
     revalidatePath("/empresa/dashboard/produtos");
@@ -87,7 +95,8 @@ export async function createProduct(companyId: string, data: any) {
       revalidatePath(`/${company.slug}`);
     }
 
-    return { success: true, product };
+    // Ensure serializability
+    return JSON.parse(JSON.stringify({ success: true, product }));
   } catch (error) {
     console.error("Error creating product:", error);
     return {
@@ -100,7 +109,10 @@ export async function createProduct(companyId: string, data: any) {
 
 export async function updateProduct(id: string, companyId: string, data: any) {
   try {
-    console.log("Updating product with data:", JSON.stringify(data, null, 2));
+    console.log("Updating product - Start");
+    console.log("Product ID:", id);
+    console.log("Data size:", JSON.stringify(data).length);
+
     const existing = await prisma.product.findFirst({
       where: { id, companyId },
     });
@@ -113,6 +125,8 @@ export async function updateProduct(id: string, companyId: string, data: any) {
     if (processedData.flavors === null) processedData.flavors = Prisma.DbNull;
     if (processedData.comboConfig === null)
       processedData.comboConfig = Prisma.DbNull;
+    if (processedData.complements === null)
+      processedData.complements = Prisma.DbNull;
 
     // Filter out undefined values to ensure Prisma only updates fields that are actually present
     // This fixes issues where undefined values might override existing data or cause errors
@@ -128,6 +142,8 @@ export async function updateProduct(id: string, companyId: string, data: any) {
       data: cleanData,
     });
 
+    console.log("Product updated successfully");
+
     // Revalidate dashboard paths
     revalidatePath("/empresa/dashboard/produtos");
     revalidatePath("/empresa/dashboard/promocoes");
@@ -141,10 +157,14 @@ export async function updateProduct(id: string, companyId: string, data: any) {
       revalidatePath(`/${company.slug}`);
     }
 
-    return { success: true, product };
+    return JSON.parse(JSON.stringify({ success: true, product }));
   } catch (error) {
     console.error("Error updating product:", error);
-    return { success: false, error: "Failed to update product" };
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to update product",
+    };
   }
 }
 

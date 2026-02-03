@@ -53,7 +53,12 @@ function ProdutosContent() {
     promotionalPrice: "",
     isPromotion: false,
     categoryId: "",
-    productType: "simple" as "simple" | "flavors" | "combo" | "wholesale",
+    productType: "simple" as
+      | "simple"
+      | "flavors"
+      | "combo"
+      | "wholesale"
+      | "complements",
     image: "",
     ingredients: [] as string[],
     wholesaleMinQuantity: "10",
@@ -74,6 +79,27 @@ function ProdutosContent() {
         options: { id: string; name: string; price: string }[];
       }[],
     },
+    complements: [] as {
+      id: string;
+      name: string;
+      min: string;
+      max: string;
+      items: {
+        id: string;
+        name: string;
+        price: string;
+        available: boolean;
+      }[];
+    }[],
+  });
+
+  const [newComplementGroup, setNewComplementGroup] = useState({
+    name: "",
+    min: "0",
+  });
+  const [newComplementItem, setNewComplementItem] = useState({
+    name: "",
+    price: "",
   });
 
   const [newFlavor, setNewFlavor] = useState({ name: "", price: "" });
@@ -148,6 +174,73 @@ function ProdutosContent() {
     }));
   };
 
+  const handleAddComplementGroup = () => {
+    if (!newComplementGroup.name) return;
+    setFormData((prev) => ({
+      ...prev,
+      complements: [
+        ...prev.complements,
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          name: newComplementGroup.name,
+          min: newComplementGroup.min || "0",
+          max: "999",
+          items: [],
+        },
+      ],
+    }));
+    setNewComplementGroup({ name: "", min: "0" });
+  };
+
+  const handleRemoveComplementGroup = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      complements: prev.complements.filter((c) => c.id !== id),
+    }));
+  };
+
+  const handleAddComplementItem = (
+    groupId: string,
+    item: { name: string; price: string },
+  ) => {
+    if (!item.name) return;
+    setFormData((prev) => ({
+      ...prev,
+      complements: prev.complements.map((group) => {
+        if (group.id === groupId) {
+          return {
+            ...group,
+            items: [
+              ...group.items,
+              {
+                id: Math.random().toString(36).substr(2, 9),
+                name: item.name,
+                price: item.price || "0",
+                available: true,
+              },
+            ],
+          };
+        }
+        return group;
+      }),
+    }));
+  };
+
+  const handleRemoveComplementItem = (groupId: string, itemId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      complements: prev.complements.map((group) => {
+        if (group.id === groupId) {
+          return {
+            ...group,
+            items: group.items.filter((item) => item.id !== itemId),
+          };
+        }
+        return group;
+      }),
+    }));
+  };
+
   useEffect(() => {
     async function load() {
       if (company?.id) {
@@ -201,6 +294,20 @@ function ProdutosContent() {
         ingredients: product.ingredients || [],
         wholesaleMinQuantity: product.wholesaleMinQuantity?.toString() || "10",
         wholesalePrice: product.wholesalePrice?.toString() || "",
+        complements: product.complements
+          ? product.complements.map((g: any) => ({
+              id: g.id,
+              name: g.name,
+              min: (g.min || 0).toString(),
+              max: (g.max || 0).toString(),
+              items: g.items.map((i: any) => ({
+                id: i.id,
+                name: i.name,
+                price: i.price.toString(),
+                available: i.available ?? true,
+              })),
+            }))
+          : [],
         flavors: Array.isArray(product.flavors)
           ? product.flavors.map((f: any) => ({
               ...f,
@@ -259,6 +366,7 @@ function ProdutosContent() {
         minFlavors: "1",
         maxFlavors: "1",
         comboConfig: { maxItems: "1", options: [], groups: [] },
+        complements: [],
         wholesaleMinQuantity: "10",
         wholesalePrice: "",
       });
@@ -316,9 +424,9 @@ function ProdutosContent() {
     const productData = {
       name: formData.name,
       description: formData.description,
-      price: parseFloat(formData.price),
+      price: parseFloat(formData.price) || 0,
       promotionalPrice: formData.promotionalPrice
-        ? parseFloat(formData.promotionalPrice)
+        ? parseFloat(formData.promotionalPrice) || null
         : null,
       isPromotion: formData.isPromotion,
       categoryId: formData.categoryId,
@@ -341,18 +449,18 @@ function ProdutosContent() {
               options: formData.flavors.map((f) => ({
                 id: f.id,
                 name: f.name,
-                priceModifier: parseFloat(f.price),
+                priceModifier: parseFloat(f.price) || 0,
               })),
             }
           : null,
       comboConfig:
         formData.productType === "combo"
           ? {
-              maxItems: parseInt(formData.comboConfig.maxItems),
+              maxItems: parseInt(formData.comboConfig.maxItems) || 1,
               options: formData.comboConfig.options.map((o) => ({
                 id: o.id,
                 name: o.name,
-                priceModifier: parseFloat(o.price),
+                priceModifier: parseFloat(o.price) || 0,
               })),
               groups: formData.comboConfig.groups.map((g) => ({
                 id: g.id,
@@ -369,6 +477,21 @@ function ProdutosContent() {
                   })) || [],
               })),
             }
+          : null,
+      complements:
+        formData.productType === "complements"
+          ? formData.complements.map((group) => ({
+              id: group.id,
+              name: group.name,
+              min: parseInt(group.min) || 0,
+              max: parseInt(group.max) || 0,
+              items: group.items.map((item) => ({
+                id: item.id,
+                name: item.name,
+                price: parseFloat(item.price) || 0,
+                available: item.available ?? true,
+              })),
+            }))
           : null,
     };
 
@@ -403,7 +526,11 @@ function ProdutosContent() {
       }
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Erro ao salvar produto");
+      alert(
+        `Erro ao salvar produto: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`,
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -885,8 +1012,193 @@ function ProdutosContent() {
                       />
                       <span className="text-sm text-foreground">Atacado</span>
                     </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="productType"
+                        value="complements"
+                        checked={formData.productType === "complements"}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            productType: e.target.value as any,
+                          }))
+                        }
+                        className="text-primary focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">
+                        Com Complementos
+                      </span>
+                    </label>
                   </div>
                 </div>
+
+                {/* Seção de Complementos */}
+                {formData.productType === "complements" && (
+                  <div className="mt-4 p-4 bg-secondary/50 rounded-lg border">
+                    <h4 className="font-medium text-sm mb-3">
+                      Configuração de Complementos
+                    </h4>
+
+                    {/* Adicionar Grupo */}
+                    <div className="mb-4 space-y-3 p-3 bg-background rounded-lg border">
+                      <h5 className="text-sm font-medium">
+                        Novo Grupo de Complementos
+                      </h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="col-span-2 flex gap-2 items-end">
+                          <div className="flex-1">
+                            <label className="text-xs font-medium mb-1 block text-muted-foreground">
+                              Nome do Grupo
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Nome do Grupo (ex: Molhos)"
+                              value={newComplementGroup.name}
+                              onChange={(e) =>
+                                setNewComplementGroup((prev) => ({
+                                  ...prev,
+                                  name: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                            />
+                          </div>
+                          <div className="w-24">
+                            <label className="text-xs font-medium mb-1 block text-muted-foreground">
+                              Quantidade Mín.
+                            </label>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={newComplementGroup.min}
+                              onChange={(e) =>
+                                setNewComplementGroup((prev) => ({
+                                  ...prev,
+                                  min: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 rounded-lg border bg-background text-sm"
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-end">
+                          <Button
+                            type="button"
+                            onClick={handleAddComplementGroup}
+                            disabled={!newComplementGroup.name}
+                            size="sm"
+                            className="w-full"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Adicionar Grupo
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lista de Grupos */}
+                    <div className="space-y-4">
+                      {formData.complements.map((group) => (
+                        <div
+                          key={group.id}
+                          className="border rounded-lg p-3 bg-background"
+                        >
+                          <div className="flex items-center justify-between mb-3 border-b pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{group.name}</span>
+                              {parseInt(group.min) > 0 && (
+                                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                  Escolha Mínima: {group.min}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRemoveComplementGroup(group.id)
+                              }
+                              className="text-destructive hover:bg-destructive/10 p-1 rounded"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          {/* Items do Grupo */}
+                          <div className="pl-4 border-l-2 border-secondary ml-1">
+                            <div className="space-y-2 mb-3">
+                              {group.items.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center justify-between text-sm bg-secondary/30 p-2 rounded"
+                                >
+                                  <span>
+                                    {item.name} (+
+                                    {formatCurrency(Number(item.price))})
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleRemoveComplementItem(
+                                        group.id,
+                                        item.id,
+                                      )
+                                    }
+                                    className="text-muted-foreground hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Adicionar Item ao Grupo */}
+                            <div className="flex gap-2 items-center">
+                              <input
+                                type="text"
+                                placeholder="Nome do Item"
+                                className="flex-1 px-2 py-1 text-sm border rounded"
+                                id={`input-name-${group.id}`}
+                              />
+                              <input
+                                type="number"
+                                placeholder="Preço"
+                                className="w-20 px-2 py-1 text-sm border rounded"
+                                id={`input-price-${group.id}`}
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  const nameInput = document.getElementById(
+                                    `input-name-${group.id}`,
+                                  ) as HTMLInputElement;
+                                  const priceInput = document.getElementById(
+                                    `input-price-${group.id}`,
+                                  ) as HTMLInputElement;
+
+                                  if (nameInput && nameInput.value) {
+                                    handleAddComplementItem(group.id, {
+                                      name: nameInput.value,
+                                      price: priceInput.value,
+                                    });
+                                    nameInput.value = "";
+                                    priceInput.value = "";
+                                    nameInput.focus();
+                                  }
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Seção de Atacado */}
                 {formData.productType === "wholesale" && (

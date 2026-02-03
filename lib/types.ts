@@ -61,10 +61,11 @@ export interface Product {
   price: number;
   promotionalPrice?: number;
   isPromotion: boolean;
-  productType: "simple" | "flavors" | "combo" | "wholesale";
+  productType: "simple" | "flavors" | "combo" | "wholesale" | "complements";
   flavors?:
     | ProductFlavor[]
     | { min: number; max: number; options: ProductFlavor[] };
+  complements?: ComplementGroup[];
   comboConfig?: ComboConfig;
   ingredients?: string[];
   wholesaleMinQuantity?: number;
@@ -102,6 +103,21 @@ export interface ComboItem {
   priceModifier: number;
 }
 
+export interface ComplementGroup {
+  id: string;
+  name: string;
+  min: number;
+  max: number;
+  items: ComplementItem[];
+}
+
+export interface ComplementItem {
+  id: string;
+  name: string;
+  price: number;
+  available: boolean;
+}
+
 // Order Types
 export interface Order {
   id: string;
@@ -129,6 +145,7 @@ export interface OrderItem {
   selectedFlavor?: string; // Kept for backward compatibility
   selectedFlavors?: string[]; // New field for multiple flavors
   comboItems?: string[];
+  selectedComplements?: SelectedComplementItem[];
   removedIngredients?: string[];
   subtotal: number;
 }
@@ -140,6 +157,14 @@ export interface SelectedComboItem extends ComboItem {
   quantity: number;
 }
 
+export interface SelectedComplementItem {
+  id: string;
+  groupId: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 export interface CartItem {
   cartItemId: string;
   product: Product;
@@ -147,6 +172,7 @@ export interface CartItem {
   selectedFlavor?: ProductFlavor; // Kept for backward compatibility
   selectedFlavors?: ProductFlavor[]; // New field for multiple flavors
   selectedComboItems?: SelectedComboItem[];
+  selectedComplements?: SelectedComplementItem[];
   removedIngredients?: string[];
   subtotal: number;
 }

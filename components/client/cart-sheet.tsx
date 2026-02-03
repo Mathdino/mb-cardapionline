@@ -149,6 +149,7 @@ export function CartSheet({ company }: CartSheetProps) {
         comboItems: item.selectedComboItems?.map(
           (ci) => `${ci.quantity}x ${ci.name}`,
         ),
+        selectedComplements: item.selectedComplements,
         removedIngredients: item.removedIngredients,
       }));
 
@@ -188,6 +189,14 @@ export function CartSheet({ company }: CartSheetProps) {
         message += ` - ${formatCurrency(item.subtotal)}\n`;
         if (item.comboItems && item.comboItems.length > 0) {
           item.comboItems.forEach((ci) => (message += `  - ${ci}\n`));
+        }
+        if (
+          item.selectedComplements &&
+          item.selectedComplements.length > 0
+        ) {
+          item.selectedComplements.forEach(
+            (comp) => (message += `  - + ${comp.quantity}x ${comp.name}\n`),
+          );
         }
         if (item.removedIngredients && item.removedIngredients.length > 0) {
           message += `  - Sem: ${item.removedIngredients.join(", ")}\n`;
@@ -340,6 +349,19 @@ export function CartSheet({ company }: CartSheetProps) {
                                       </p>
                                     ),
                                   )}
+                                </div>
+                              )}
+                            {item.selectedComplements &&
+                              item.selectedComplements.length > 0 && (
+                                <div className="mt-1 space-y-0.5">
+                                  {item.selectedComplements.map((comp, i) => (
+                                    <p
+                                      key={i}
+                                      className="text-xs text-muted-foreground"
+                                    >
+                                      + {comp.quantity}x {comp.name}
+                                    </p>
+                                  ))}
                                 </div>
                               )}
                             <p className="text-sm font-semibold text-foreground mt-1">
@@ -758,6 +780,12 @@ export function CartSheet({ company }: CartSheetProps) {
                             item.selectedComboItems.map((comboItem, i) => (
                               <span key={i} className="text-xs pl-4">
                                 - {comboItem.quantity}x {comboItem.name}
+                              </span>
+                            ))}
+                          {item.selectedComplements &&
+                            item.selectedComplements.map((comp, i) => (
+                              <span key={i} className="text-xs pl-4">
+                                + {comp.quantity}x {comp.name}
                               </span>
                             ))}
                         </div>

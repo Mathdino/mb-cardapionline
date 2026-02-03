@@ -483,6 +483,40 @@ export default function PedidosPage() {
                                   </div>
                                 )}
 
+                              {/* Complements */}
+                              {item.selectedComplements &&
+                                item.selectedComplements.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                      Adicionais
+                                    </p>
+                                    <ul className="text-sm text-muted-foreground space-y-0.5">
+                                      {item.selectedComplements.map(
+                                        (comp, idx) => (
+                                          <li
+                                            key={idx}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <span className="w-1.5 h-1.5 rounded-full bg-secondary-foreground/30" />
+                                            <span>
+                                              {comp.quantity}x {comp.name}
+                                              {comp.price > 0 && (
+                                                <span className="text-xs ml-1 opacity-70">
+                                                  (+
+                                                  {formatCurrency(
+                                                    comp.price * comp.quantity,
+                                                  )}
+                                                  )
+                                                </span>
+                                              )}
+                                            </span>
+                                          </li>
+                                        ),
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+
                               {/* Removed Ingredients */}
                               {item.removedIngredients &&
                                 item.removedIngredients.length > 0 && (

@@ -31,6 +31,7 @@ interface CartContextType {
     selectedComboItems?: SelectedComboItem[],
     removedIngredients?: string[],
     selectedFlavors?: ProductFlavor[],
+    selectedComplements?: SelectedComplementItem[],
   ) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
@@ -110,6 +111,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       selectedComboItems?: SelectedComboItem[],
       removedIngredients?: string[],
       selectedFlavors?: ProductFlavor[],
+      selectedComplements?: SelectedComplementItem[],
     ) => {
       setItems((prev) => {
         const effectiveFlavors =
@@ -133,6 +135,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
             // If it has combo items, we always add as new item for simplicity unless deep comparison
             !item.selectedComboItems &&
             !selectedComboItems &&
+            // Compare complements (simplified: if present, always new item to avoid complex comparison logic for now)
+            // Or better: check if both are undefined/empty
+            ((!item.selectedComplements && !selectedComplements) ||
+              (item.selectedComplements?.length === 0 &&
+                (!selectedComplements || selectedComplements.length === 0))) &&
             (!item.removedIngredients ||
               item.removedIngredients.length === 0) &&
             (!removedIngredients || removedIngredients.length === 0),
@@ -165,6 +172,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           });
         }
 
+        if (selectedComplements) {
+          selectedComplements.forEach((comp) => {
+            modifiers += comp.price * comp.quantity;
+          });
+        }
+
         if (existingIndex >= 0) {
           const updated = [...prev];
           const newQty = updated[existingIndex].quantity + quantity;
@@ -186,6 +199,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               effectiveFlavors.length === 1 ? effectiveFlavors[0] : undefined,
             selectedFlavors: effectiveFlavors,
             selectedComboItems,
+            selectedComplements,
             removedIngredients,
             subtotal,
           },
@@ -236,6 +250,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             if (item.selectedComboItems) {
               item.selectedComboItems.forEach((comboItem) => {
                 unitPrice += comboItem.priceModifier * comboItem.quantity;
+              });
+            }
+
+            if (item.selectedComplements) {
+              item.selectedComplements.forEach((comp) => {
+                unitPrice += comp.price * comp.quantity;
               });
             }
 
@@ -293,6 +313,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
           message += `\n  *Itens do Combo:*`;
           item.selectedComboItems.forEach((comboItem) => {
             message += `\n  - ${comboItem.quantity}x ${comboItem.name}`;
+          });
+        }
+
+        if (item.selectedComplements && item.selectedComplements.length > 0) {
+          message += `\n  *Complementos:*`;
+          item.selectedComplements.forEach((comp) => {
+            message += `\n  - ${comp.quantity}x ${comp.name} (+${formatCurrency(comp.price * comp.quantity)})`;
           });
         }
 

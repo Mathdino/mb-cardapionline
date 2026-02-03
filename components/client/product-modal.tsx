@@ -3,7 +3,12 @@
 import Image from "next/image";
 import { X, Minus, Plus, Check } from "lucide-react";
 import { useState, useEffect } from "react";
-import type { Product, ProductFlavor, SelectedComboItem } from "@/lib/types";
+import type {
+  Product,
+  ProductFlavor,
+  SelectedComboItem,
+  SelectedComplementItem,
+} from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
@@ -28,6 +33,9 @@ export function ProductModal({
     Record<string, Record<string, number>>
   >({});
   const [removedIngredients, setRemovedIngredients] = useState<string[]>([]);
+  const [complementSelections, setComplementSelections] = useState<
+    Record<string, Record<string, number>>
+  >({});
   const { addItem } = useCart();
 
   const getFlavorConfig = () => {
@@ -52,6 +60,7 @@ export function ProductModal({
       // For now, empty selection.
       setSelectedFlavors([]);
       setComboSelections({});
+      setComplementSelections({});
       setRemovedIngredients([]);
     }
   }, [product]);
@@ -134,6 +143,20 @@ export function ProductModal({
       }
     }
 
+    if (product.productType === "complements" && product.complements) {
+      Object.entries(complementSelections).forEach(([groupId, selections]) => {
+        const group = product.complements!.find((g) => g.id === groupId);
+        if (!group) return;
+
+        Object.entries(selections).forEach(([itemId, qty]) => {
+          const item = group.items.find((i) => i.id === itemId);
+          if (item) {
+            price += item.price * qty;
+          }
+        });
+      });
+    }
+
     return price;
   };
 
@@ -141,6 +164,11 @@ export function ProductModal({
 
   const getGroupTotalSelected = (groupId: string) => {
     const selections = comboSelections[groupId] || {};
+    return Object.values(selections).reduce((sum, qty) => sum + qty, 0);
+  };
+
+  const getComplementGroupTotalSelected = (groupId: string) => {
+    const selections = complementSelections[groupId] || {};
     return Object.values(selections).reduce((sum, qty) => sum + qty, 0);
   };
 
@@ -159,11 +187,24 @@ export function ProductModal({
         });
       }
     }
+
+    if (
+      product.productType === "complements" &&
+      product.complements &&
+      product.complements.length > 0
+    ) {
+      return product.complements.every((group) => {
+        const total = getComplementGroupTotalSelected(group.id);
+        return total >= group.min && total <= group.max;
+      });
+    }
+
     return true;
   };
 
   const handleAddToCart = () => {
     let selectedComboItems: SelectedComboItem[] = [];
+    let selectedComplementItems: SelectedComplementItem[] = [];
 
     if (product.productType === "combo" && product.comboConfig?.groups) {
       Object.entries(comboSelections).forEach(([groupId, selections]) => {
@@ -212,6 +253,27 @@ export function ProductModal({
       });
     }
 
+    if (product.productType === "complements" && product.complements) {
+      Object.entries(complementSelections).forEach(([groupId, selections]) => {
+        const group = product.complements!.find((g) => g.id === groupId);
+        if (!group) return;
+
+        Object.entries(selections).forEach(([itemId, qty]) => {
+          if (qty <= 0) return;
+          const item = group.items.find((i) => i.id === itemId);
+          if (item) {
+            selectedComplementItems.push({
+              id: item.id,
+              groupId: group.id,
+              name: item.name,
+              price: item.price,
+              quantity: qty,
+            });
+          }
+        });
+      });
+    }
+
     addItem(
       product,
       quantity,
@@ -219,6 +281,7 @@ export function ProductModal({
       selectedComboItems.length > 0 ? selectedComboItems : undefined,
       removedIngredients,
       selectedFlavors,
+      selectedComplementItems.length > 0 ? selectedComplementItems : undefined,
     );
     onClose();
   };
@@ -260,6 +323,31 @@ export function ProductModal({
     delta: number,
   ) => {
     setComboSelections((prev) => {
+      const groupSelections = prev[groupId] || {};
+      const currentQty = groupSelections[itemId] || 0;
+      const newQty = currentQty + delta;
+
+      if (newQty <= 0) {
+        const { [itemId]: _, ...rest } = groupSelections;
+        return { ...prev, [groupId]: rest };
+      }
+
+      return {
+        ...prev,
+        [groupId]: {
+          ...groupSelections,
+          [itemId]: newQty,
+        },
+      };
+    });
+  };
+
+  const handleUpdateComplementSelection = (
+    groupId: string,
+    itemId: string,
+    delta: number,
+  ) => {
+    setComplementSelections((prev) => {
       const groupSelections = prev[groupId] || {};
       const currentQty = groupSelections[itemId] || 0;
       const newQty = currentQty + delta;
@@ -341,6 +429,103 @@ export function ProductModal({
               )}
             </div>
           </div>
+
+          {/* Complements Options - Displayed First */}
+          {product.productType === "complements" && product.complements && (
+            <div className="mb-6 space-y-6">
+              {product.complements.map((group) => {
+                const currentTotal = getComplementGroupTotalSelected(group.id);
+                const isMaxReached = currentTotal >= group.max;
+
+                return (
+                  <div key={group.id} className="border rounded-xl p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <div>
+                        <h3 className="font-semibold text-foreground">
+                          {group.name}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          {group.max >= 999
+                            ? group.min > 0
+                              ? `Escolha pelo menos ${group.min} opções`
+                              : "Escolha à vontade"
+                            : `Escolha ${
+                                group.min === group.max
+                                  ? group.min
+                                  : `${group.min} a ${group.max}`
+                              } opções`}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-sm font-medium ${currentTotal < group.min ? "text-destructive" : "text-green-600"}`}
+                      >
+                        {group.max >= 999
+                          ? currentTotal
+                          : `${currentTotal}/${group.max}`}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {group.items.map((item) => {
+                        const currentQty =
+                          complementSelections[group.id]?.[item.id] || 0;
+                        const itemMax = 999; // No limit per item
+                        const canIncrease =
+                          !isMaxReached && currentQty < itemMax;
+                        const canDecrease = currentQty > 0;
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between p-3 rounded-lg border bg-secondary/20"
+                          >
+                            <div>
+                              <p className="font-medium text-sm">{item.name}</p>
+                              <p className="text-sm font-bold text-primary">
+                                +{formatCurrency(item.price)}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-3 bg-background rounded-lg border p-1">
+                              <button
+                                onClick={() =>
+                                  handleUpdateComplementSelection(
+                                    group.id,
+                                    item.id,
+                                    -1,
+                                  )
+                                }
+                                disabled={!canDecrease}
+                                className="p-1 rounded-md hover:bg-secondary disabled:opacity-30 disabled:hover:bg-transparent"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </button>
+                              <span className="w-4 text-center text-sm font-medium">
+                                {currentQty}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleUpdateComplementSelection(
+                                    group.id,
+                                    item.id,
+                                    1,
+                                  )
+                                }
+                                disabled={!canIncrease}
+                                className="p-1 rounded-md hover:bg-secondary disabled:opacity-30 disabled:hover:bg-transparent"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Wholesale Info */}
           {product.productType === "wholesale" &&
@@ -518,17 +703,23 @@ export function ProductModal({
                           {group.title}
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                          Escolha{" "}
-                          {group.min === group.max
-                            ? group.min
-                            : `${group.min} a ${group.max}`}{" "}
-                          opções
+                          {group.max >= 999
+                            ? group.min > 0
+                              ? `Escolha pelo menos ${group.min} opções`
+                              : "Escolha à vontade"
+                            : `Escolha ${
+                                group.min === group.max
+                                  ? group.min
+                                  : `${group.min} a ${group.max}`
+                              } opções`}
                         </p>
                       </div>
                       <span
                         className={`text-sm font-medium ${currentTotal < group.min ? "text-destructive" : "text-green-600"}`}
                       >
-                        {currentTotal}/{group.max}
+                        {group.max >= 999
+                          ? currentTotal
+                          : `${currentTotal}/${group.max}`}
                       </span>
                     </div>
 
@@ -668,6 +859,8 @@ export function ProductModal({
               })}
             </div>
           )}
+
+          {/* Complements Options moved to top */}
         </div>
       </div>
 

@@ -137,6 +137,7 @@ model Product {
   isPromotion      Boolean  @default(false)
   productType      String
   flavors          Json?
+  complements      Json?
   comboConfig      Json?
   ingredients      String[]
   wholesaleMinQuantity Int?
