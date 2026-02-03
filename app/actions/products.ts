@@ -102,9 +102,18 @@ export async function updateProduct(id: string, companyId: string, data: any) {
     if (processedData.comboConfig === null)
       processedData.comboConfig = Prisma.DbNull;
 
+    // Filter out undefined values to ensure Prisma only updates fields that are actually present
+    // This fixes issues where undefined values might override existing data or cause errors
+    const cleanData: any = {};
+    Object.keys(processedData).forEach((key) => {
+      if (processedData[key] !== undefined) {
+        cleanData[key] = processedData[key];
+      }
+    });
+
     const product = await prisma.product.update({
       where: { id },
-      data: processedData,
+      data: cleanData,
     });
 
     revalidatePath("/empresa/dashboard/produtos");
