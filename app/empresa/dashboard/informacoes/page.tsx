@@ -137,6 +137,7 @@ export default function InformacoesPage() {
 
       const data = await response.json();
 
+      // Update form data
       setFormData((prev) =>
         prev
           ? {
@@ -146,10 +147,26 @@ export default function InformacoesPage() {
           : null,
       );
 
-      setMessage({
-        type: "success",
-        text: "Imagem atualizada com sucesso! Lembre-se de salvar.",
-      });
+      // Save to backend immediately
+      if (company?.id) {
+        const updateResult = await updateCompany(company.id, {
+          [cropField]: data.url,
+        });
+
+        if (updateResult.success && updateResult.company) {
+          updateCompanyData(updateResult.company as unknown as Company);
+          setMessage({
+            type: "success",
+            text: "Imagem salva com sucesso!",
+          });
+        } else {
+          setMessage({
+            type: "error",
+            text: "Imagem enviada, mas houve um erro ao salvar no perfil.",
+          });
+        }
+      }
+
       setIsCropping(false);
       setCropImage(null);
       setCropField(null);
