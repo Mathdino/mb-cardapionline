@@ -40,6 +40,8 @@ export default function InformacoesPage() {
           name: company.name || "",
           description: company.description || "",
           whatsapp: company.whatsapp || "",
+          minimumOrder: company.minimumOrder || 0,
+          averagePreparationTime: company.averagePreparationTime || 40,
           profileImage: company.profileImage || "",
           bannerImage: company.bannerImage || "",
           address: {
@@ -415,6 +417,29 @@ export default function InformacoesPage() {
                   }
                   step="0.01"
                   min="0"
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Tempo Médio de Preparo (minutos)
+                </label>
+                <input
+                  type="number"
+                  value={formData.averagePreparationTime || 40}
+                  onChange={(e) =>
+                    setFormData((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            averagePreparationTime:
+                              parseInt(e.target.value) || 0,
+                          }
+                        : null,
+                    )
+                  }
+                  min="1"
                   className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>

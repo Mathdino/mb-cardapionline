@@ -12,6 +12,7 @@ export interface Company {
   address: Address;
   businessHours: BusinessHours[];
   paymentMethods: PaymentMethod[];
+  averagePreparationTime?: number;
   isOpen: boolean;
   createdAt: Date;
   updatedAt: Date;

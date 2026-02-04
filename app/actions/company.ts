@@ -49,6 +49,8 @@ export async function updateCompany(companyId: string, data: Partial<Company>) {
       cleanData.businessHours = data.businessHours;
     if (data.paymentMethods !== undefined)
       cleanData.paymentMethods = data.paymentMethods;
+    if (data.averagePreparationTime !== undefined)
+      cleanData.averagePreparationTime = data.averagePreparationTime;
 
     const updatedCompany = await prisma.company.update({
       where: { id: companyId },

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Clock, ChevronRight } from "lucide-react";
+import { Clock, ChevronRight, Timer } from "lucide-react";
 import type { Company } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -85,7 +85,7 @@ export function RestaurantHeader({ company }: RestaurantHeaderProps) {
           </div>
 
           {/* Quick Info */}
-          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
             {todayHours?.isOpen && (
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4" />
@@ -94,6 +94,10 @@ export function RestaurantHeader({ company }: RestaurantHeaderProps) {
                 </span>
               </div>
             )}
+            <div className="flex items-center gap-1">
+              <Timer className="h-4 w-4" />
+              <span>{company.averagePreparationTime || 40} min</span>
+            </div>
             <div className="flex items-center gap-1">
               <span>Min. {formatCurrency(company.minimumOrder)}</span>
             </div>
