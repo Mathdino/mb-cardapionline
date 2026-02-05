@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import {
   formatCurrency,
@@ -30,6 +31,7 @@ interface CartSheetProps {
 }
 
 export function CartSheet({ company }: CartSheetProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -190,10 +192,7 @@ export function CartSheet({ company }: CartSheetProps) {
         if (item.comboItems && item.comboItems.length > 0) {
           item.comboItems.forEach((ci) => (message += `  - ${ci}\n`));
         }
-        if (
-          item.selectedComplements &&
-          item.selectedComplements.length > 0
-        ) {
+        if (item.selectedComplements && item.selectedComplements.length > 0) {
           item.selectedComplements.forEach(
             (comp) => (message += `  - + ${comp.quantity}x ${comp.name}\n`),
           );
@@ -215,6 +214,11 @@ export function CartSheet({ company }: CartSheetProps) {
       const whatsappUrl = `https://wa.me/${company.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
 
       window.open(whatsappUrl, "_blank");
+
+      if (session?.user) {
+        router.push("/historico");
+      }
+
       clearCart();
       setIsOpen(false);
       setShowCheckout(false);
@@ -232,7 +236,11 @@ export function CartSheet({ company }: CartSheetProps) {
       setNotes("");
     } catch (error) {
       console.error("Error processing order:", error);
-      alert("Erro ao processar pedido. Por favor, tente novamente.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Erro ao processar pedido. Por favor, tente novamente.",
+      );
     } finally {
       setIsSubmitting(false);
     }

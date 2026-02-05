@@ -44,6 +44,11 @@ export function formatPhone(value: string) {
   // Remove tudo que não é dígito
   value = value.replace(/\D/g, "");
 
+  // Remove código do país (55) se tiver 12 ou 13 dígitos
+  if ((value.length === 12 || value.length === 13) && value.startsWith("55")) {
+    value = value.substring(2);
+  }
+
   // Limita a 11 dígitos
   if (value.length > 11) {
     value = value.slice(0, 11);

@@ -113,7 +113,7 @@ export function AuthForm() {
       <Button
         variant="outline"
         className="w-full mb-4 flex items-center justify-center gap-2"
-        onClick={() => signIn("google", { callbackUrl: "/" })}
+        onClick={() => signIn("google", { callbackUrl: "/perfil" })}
       >
         <Image
           src="/icon-google.svg"

@@ -21,11 +21,7 @@ export default function EmpresaLoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && user) {
-      if (user.role === "admin") {
-        router.push("/admin");
-      } else {
-        router.push("/empresa/dashboard");
-      }
+      router.push("/empresa/dashboard");
     }
   }, [user, isLoading, router]);
 

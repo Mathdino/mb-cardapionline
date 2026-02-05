@@ -80,14 +80,6 @@ export default async function InfoPage({ params }: PageProps) {
                   <span>{formatPhone(phone)}</span>
                 </div>
               ))}
-            {company.whatsapp && (
-              <div className="flex items-center gap-3">
-                <div className="h-4 w-4 bg-green-500 rounded-full flex items-center justify-center text-[10px] text-white font-bold">
-                  W
-                </div>
-                <span>{formatPhone(company.whatsapp)}</span>
-              </div>
-            )}
           </div>
         </section>
 

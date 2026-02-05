@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
 import { paymentMethodLabels, defaultBusinessHours } from "@/lib/mock-data";
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhone, getCroppedImg } from "@/lib/utils";
-import { updateCompany } from "@/app/actions/company";
+import { updateCompany, getCompanyById } from "@/app/actions/company";
 import Cropper from "react-easy-crop";
 import {
   Dialog,
@@ -64,6 +64,52 @@ export default function InformacoesPage() {
         }
       : null,
   );
+
+  useEffect(() => {
+    async function refreshData() {
+      if (company?.id) {
+        try {
+          const freshCompany = await getCompanyById(company.id);
+          if (freshCompany) {
+            const typedCompany = freshCompany as unknown as Company;
+            updateCompanyData(typedCompany);
+            setFormData({
+              ...typedCompany,
+              name: typedCompany.name || "",
+              description: typedCompany.description || "",
+              whatsapp: typedCompany.whatsapp || "",
+              minimumOrder: typedCompany.minimumOrder || 0,
+              averagePreparationTime: typedCompany.averagePreparationTime || 40,
+              profileImage: typedCompany.profileImage || "",
+              bannerImage: typedCompany.bannerImage || "",
+              address: {
+                cep: typedCompany.address?.cep || "",
+                street: typedCompany.address?.street || "",
+                number: typedCompany.address?.number || "",
+                neighborhood: typedCompany.address?.neighborhood || "",
+                city: typedCompany.address?.city || "",
+                state: typedCompany.address?.state || "",
+              },
+              phone: Array.isArray(typedCompany.phone) ? typedCompany.phone : [],
+              paymentMethods: Array.isArray(typedCompany.paymentMethods)
+                ? typedCompany.paymentMethods
+                : [],
+              businessHours:
+                Array.isArray(typedCompany.businessHours) &&
+                typedCompany.businessHours.length > 0
+                  ? typedCompany.businessHours
+                  : defaultBusinessHours,
+            });
+          }
+        } catch (error) {
+          console.error("Failed to refresh company data:", error);
+        }
+      }
+    }
+
+    refreshData();
+  }, [company?.id, updateCompanyData]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";

@@ -1,130 +1,30 @@
-import Link from "next/link";
-import Image from "next/image";
-import { formatCurrency } from "@/lib/utils";
-import { MapPin } from "lucide-react";
 import { getCompanies } from "@/app/actions/company";
-import { Address } from "@/lib/types";
-
-import { SiteFooter } from "@/components/client/site-footer";
-import { HomeHeader } from "@/components/client/home-header";
+import { getCategories } from "@/app/actions/categories";
+import { getStoreProducts } from "@/app/actions/products";
+import RestaurantPage from "./[slug]/restaurant-page";
 
 export default async function HomePage() {
   const companies = await getCompanies();
+  const company = companies[0];
+
+  if (!company) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Nenhum restaurante encontrado.</p>
+      </div>
+    );
+  }
+
+  const [categories, products] = await Promise.all([
+    getCategories(company.id),
+    getStoreProducts(company.id),
+  ]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <HomeHeader />
-      <main className="flex-1">
-        {/* Hero Section */}
-        <div className="bg-[#ce0707] py-8 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-              Cardápio Online
-            </h1>
-            <p className="text-white/80 text-lg">
-              Veja exemplos de estabelecimentos que se adequam ao seu e adquira
-              o seu cardápio online.
-            </p>
-          </div>
-        </div>
-
-        {/* Restaurant List */}
-        <div className="max-w-4xl mx-auto p-4">
-          <h2 className="text-xl font-bold text-foreground mb-4">
-            Restaurantes
-          </h2>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {companies.map((company) => {
-              const address = company.address as unknown as Address;
-              return (
-                <Link
-                  key={company.id}
-                  href={`/${company.slug}`}
-                  className="block bg-card border rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
-                >
-                  {/* Banner */}
-                  <div className="relative h-32">
-                    <Image
-                      src={company.bannerImage || "/placeholder.svg"}
-                      alt={company.name}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
-
-                    {/* Logo */}
-                    <div className="absolute -bottom-6 left-4">
-                      <div className="relative h-14 w-14 rounded-full border-2 border-background overflow-hidden bg-background">
-                        <Image
-                          src={company.profileImage || "/placeholder.svg"}
-                          alt={company.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="pt-8 pb-4 px-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-foreground">
-                        {company.name}
-                      </h3>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          company.isOpen
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {company.isOpen ? "Aberto" : "Fechado"}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
-                      {company.description}
-                    </p>
-
-                    <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        <span>{address.city}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span>Min. {formatCurrency(company.minimumOrder)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Quick Access Links */}
-          <div className="mt-8 border-t pt-8">
-            <h3 className="text-lg font-bold text-foreground mb-4">
-              Acesso Rápido
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/empresa"
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
-              >
-                Painel da Empresa
-              </Link>
-              <Link
-                href="/admin"
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
-              >
-                Painel Admin
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
-      <SiteFooter />
-    </div>
+    <RestaurantPage
+      company={company}
+      categories={categories}
+      products={products}
+    />
   );
 }

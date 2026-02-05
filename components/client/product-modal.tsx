@@ -691,7 +691,7 @@ export function ProductModal({
           {/* Combo Options (New Group Structure) */}
           {product.productType === "combo" && product.comboConfig?.groups && (
             <div className="mt-6 space-y-6">
-              {product.comboConfig.groups.map((group) => {
+              {[...product.comboConfig.groups].reverse().map((group) => {
                 const currentTotal = getGroupTotalSelected(group.id);
                 const isMaxReached = currentTotal >= group.max;
 

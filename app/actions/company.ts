@@ -28,6 +28,18 @@ export async function getCompanyBySlug(slug: string) {
   }
 }
 
+export async function getCompanyById(id: string) {
+  try {
+    const company = await prisma.company.findUnique({
+      where: { id },
+    });
+    return company;
+  } catch (error) {
+    console.error("Error fetching company by id:", error);
+    return null;
+  }
+}
+
 export async function updateCompany(companyId: string, data: Partial<Company>) {
   try {
     // Filter out undefined values to ensure Prisma only updates fields that are actually present

@@ -36,7 +36,7 @@ export default function PromocoesPage() {
   const [comboFormData, setComboFormData] = useState({
     name: "",
     description: "",
-    price: "",
+    price: "0",
     categoryId: "",
     image: "",
     comboConfig: {
@@ -591,41 +591,20 @@ export default function PromocoesPage() {
 
             <form onSubmit={handleCreateCombo} className="space-y-6">
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Nome</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full p-2 border rounded bg-background"
-                    value={comboFormData.name}
-                    onChange={(e) =>
-                      setComboFormData({
-                        ...comboFormData,
-                        name: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Preço
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    step="0.01"
-                    min="0"
-                    className="w-full p-2 border rounded bg-background"
-                    value={comboFormData.price}
-                    onChange={(e) =>
-                      setComboFormData({
-                        ...comboFormData,
-                        price: e.target.value,
-                      })
-                    }
-                  />
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Nome</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full p-2 border rounded bg-background"
+                  value={comboFormData.name}
+                  onChange={(e) =>
+                    setComboFormData({
+                      ...comboFormData,
+                      name: e.target.value,
+                    })
+                  }
+                />
               </div>
 
               {/* Image Upload */}
@@ -794,7 +773,7 @@ export default function PromocoesPage() {
 
                       <div className="flex gap-3 mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs">Min:</span>
+                          <span className="text-xs">Escolhas Min:</span>
                           <input
                             type="number"
                             className="w-16 p-1 border rounded text-sm bg-background"
@@ -815,7 +794,7 @@ export default function PromocoesPage() {
                           />
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs">Max:</span>
+                          <span className="text-xs">Escolhas Max:</span>
                           <input
                             type="number"
                             className="w-16 p-1 border rounded text-sm bg-background"
@@ -971,48 +950,59 @@ export default function PromocoesPage() {
                       ) : (
                         <div className="space-y-2">
                           {group.options.map((opt, optIdx) => (
-                            <div key={opt.id} className="flex gap-2">
-                              <input
-                                placeholder="Nome"
-                                className="flex-1 p-1 border rounded text-sm bg-background"
-                                value={opt.name}
-                                onChange={(e) => {
-                                  const newGroups = [
-                                    ...comboFormData.comboConfig.groups,
-                                  ];
-                                  newGroups[idx].options[optIdx].name =
-                                    e.target.value;
-                                  setComboFormData({
-                                    ...comboFormData,
-                                    comboConfig: {
-                                      ...comboFormData.comboConfig,
-                                      groups: newGroups,
-                                    },
-                                  });
-                                }}
-                              />
-                              <input
-                                placeholder="Preço (+)"
-                                type="number"
-                                className="w-20 p-1 border rounded text-sm bg-background"
-                                value={opt.price}
-                                onChange={(e) => {
-                                  const newGroups = [
-                                    ...comboFormData.comboConfig.groups,
-                                  ];
-                                  newGroups[idx].options[optIdx].price =
-                                    e.target.value;
-                                  setComboFormData({
-                                    ...comboFormData,
-                                    comboConfig: {
-                                      ...comboFormData.comboConfig,
-                                      groups: newGroups,
-                                    },
-                                  });
-                                }}
-                              />
+                            <div key={opt.id} className="flex gap-2 items-end">
+                              <div className="flex-1">
+                                <label className="text-xs text-muted-foreground mb-1 block">
+                                  Nome do Produto
+                                </label>
+                                <input
+                                  placeholder="Nome"
+                                  className="w-full p-1 border rounded text-sm bg-background"
+                                  value={opt.name}
+                                  onChange={(e) => {
+                                    const newGroups = [
+                                      ...comboFormData.comboConfig.groups,
+                                    ];
+                                    newGroups[idx].options[optIdx].name =
+                                      e.target.value;
+                                    setComboFormData({
+                                      ...comboFormData,
+                                      comboConfig: {
+                                        ...comboFormData.comboConfig,
+                                        groups: newGroups,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="w-24">
+                                <label className="text-xs text-muted-foreground mb-1 block">
+                                  Preço
+                                </label>
+                                <input
+                                  placeholder="0.00"
+                                  type="number"
+                                  className="w-full p-1 border rounded text-sm bg-background"
+                                  value={opt.price}
+                                  onChange={(e) => {
+                                    const newGroups = [
+                                      ...comboFormData.comboConfig.groups,
+                                    ];
+                                    newGroups[idx].options[optIdx].price =
+                                      e.target.value;
+                                    setComboFormData({
+                                      ...comboFormData,
+                                      comboConfig: {
+                                        ...comboFormData.comboConfig,
+                                        groups: newGroups,
+                                      },
+                                    });
+                                  }}
+                                />
+                              </div>
                               <button
                                 type="button"
+                                className="mb-[5px] p-1 text-destructive hover:bg-destructive/10 rounded"
                                 onClick={() => {
                                   const newGroups = [
                                     ...comboFormData.comboConfig.groups,
@@ -1029,7 +1019,7 @@ export default function PromocoesPage() {
                                   });
                                 }}
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
                           ))}
@@ -1055,7 +1045,7 @@ export default function PromocoesPage() {
                               });
                             }}
                           >
-                            + Adicionar Opção
+                            + Adicionar Opção de Produto
                           </Button>
                         </div>
                       )}

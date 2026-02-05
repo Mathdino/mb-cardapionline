@@ -46,10 +46,11 @@ export async function createOrder(data: CreateOrderData) {
       total,
       paymentMethod,
       notes,
-      userId,
       couponId,
       discount,
     } = data;
+
+    let userId = data.userId;
 
     // Validate company exists
     const company = await prisma.company.findUnique({
@@ -58,6 +59,18 @@ export async function createOrder(data: CreateOrderData) {
 
     if (!company) {
       return { success: false, error: "Company not found" };
+    }
+
+    // Validate user if provided
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        // If user not found (e.g. stale session), treat as guest order
+        console.warn(`User ${userId} not found, proceeding as guest order`);
+        userId = undefined;
+      }
     }
 
     if (!company.isOpen) {
@@ -117,9 +130,9 @@ export async function createOrder(data: CreateOrderData) {
     revalidatePath(`/loja/${company.slug}`);
 
     return { success: true, orderId: order.id };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating order:", error);
-    return { success: false, error: "Failed to create order" };
+    return { success: false, error: error.message || "Failed to create order" };
   }
 }
 

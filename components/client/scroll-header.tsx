@@ -11,6 +11,7 @@ import {
   LogIn,
   Info,
   LogOut,
+  LayoutDashboard,
 } from "lucide-react";
 import type { Company } from "@/lib/types";
 import { useSession, signOut } from "next-auth/react";
@@ -179,6 +180,14 @@ export function ScrollHeader({
                           <span className="font-medium">Sobre nós</span>
                         </Link>
                       )}
+
+                      <Link
+                        href="/empresa"
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-secondary rounded-lg transition-colors"
+                      >
+                        <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium">Painel da Empresa</span>
+                      </Link>
 
                       {session?.user && (
                         <button

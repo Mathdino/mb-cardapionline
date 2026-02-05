@@ -90,15 +90,6 @@ export function HomeHeader() {
                     Painel da Empresa
                   </Button>
                 </Link>
-                <Link href="/admin" className="block">
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
-                  >
-                    <Shield className="h-4 w-4" />
-                    Painel Admin
-                  </Button>
-                </Link>
               </div>
 
               {session?.user && (

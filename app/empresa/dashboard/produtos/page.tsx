@@ -1605,51 +1605,61 @@ function ProdutosContent() {
                                 {group.options?.map((option, optIndex) => (
                                   <div
                                     key={option.id}
-                                    className="flex gap-2 items-center"
+                                    className="flex gap-2 items-end"
                                   >
-                                    <input
-                                      type="text"
-                                      value={option.name}
-                                      onChange={(e) => {
-                                        const newGroups = [
-                                          ...formData.comboConfig.groups,
-                                        ];
-                                        newGroups[groupIndex].options[
-                                          optIndex
-                                        ].name = e.target.value;
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          comboConfig: {
-                                            ...prev.comboConfig,
-                                            groups: newGroups,
-                                          },
-                                        }));
-                                      }}
-                                      className="flex-1 px-2 py-1 rounded border text-sm"
-                                      placeholder="Nome (ex: Batata)"
-                                    />
-                                    <input
-                                      type="number"
-                                      value={option.price}
-                                      onChange={(e) => {
-                                        const newGroups = [
-                                          ...formData.comboConfig.groups,
-                                        ];
-                                        newGroups[groupIndex].options[
-                                          optIndex
-                                        ].price = e.target.value;
-                                        setFormData((prev) => ({
-                                          ...prev,
-                                          comboConfig: {
-                                            ...prev.comboConfig,
-                                            groups: newGroups,
-                                          },
-                                        }));
-                                      }}
-                                      className="w-24 px-2 py-1 rounded border text-sm"
-                                      placeholder="0.00"
-                                      step="0.01"
-                                    />
+                                    <div className="flex-1">
+                                      <label className="text-xs text-muted-foreground mb-1 block">
+                                        Nome
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={option.name}
+                                        onChange={(e) => {
+                                          const newGroups = [
+                                            ...formData.comboConfig.groups,
+                                          ];
+                                          newGroups[groupIndex].options[
+                                            optIndex
+                                          ].name = e.target.value;
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            comboConfig: {
+                                              ...prev.comboConfig,
+                                              groups: newGroups,
+                                            },
+                                          }));
+                                        }}
+                                        className="w-full px-2 py-1 rounded border text-sm"
+                                        placeholder="Nome (ex: Batata)"
+                                      />
+                                    </div>
+                                    <div className="w-24">
+                                      <label className="text-xs text-muted-foreground mb-1 block">
+                                        Preço
+                                      </label>
+                                      <input
+                                        type="number"
+                                        value={option.price}
+                                        onChange={(e) => {
+                                          const newGroups = [
+                                            ...formData.comboConfig.groups,
+                                          ];
+                                          newGroups[groupIndex].options[
+                                            optIndex
+                                          ].price = e.target.value;
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            comboConfig: {
+                                              ...prev.comboConfig,
+                                              groups: newGroups,
+                                            },
+                                          }));
+                                        }}
+                                        className="w-full px-2 py-1 rounded border text-sm"
+                                        placeholder="0.00"
+                                        step="0.01"
+                                      />
+                                    </div>
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -1668,7 +1678,7 @@ function ProdutosContent() {
                                           },
                                         }));
                                       }}
-                                      className="text-destructive p-1"
+                                      className="text-destructive p-2 hover:bg-destructive/10 rounded mb-[1px]"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </button>
