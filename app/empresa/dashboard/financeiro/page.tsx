@@ -30,7 +30,13 @@ import { FoodLoading } from "@/components/ui/food-loading";
 
 type FilterPeriod = "today" | "week" | "month" | "year" | "custom";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+const COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
 
 export default function FinanceiroPage() {
   const { getCompany } = useAuth();

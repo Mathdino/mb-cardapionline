@@ -42,6 +42,7 @@ export async function getCompanyById(id: string) {
 
 export async function updateCompany(companyId: string, data: Partial<Company>) {
   try {
+    console.log("Updating company:", companyId, data);
     // Filter out undefined values to ensure Prisma only updates fields that are actually present
     const cleanData: any = {};
 
@@ -63,6 +64,8 @@ export async function updateCompany(companyId: string, data: Partial<Company>) {
       cleanData.paymentMethods = data.paymentMethods;
     if (data.averagePreparationTime !== undefined)
       cleanData.averagePreparationTime = data.averagePreparationTime;
+    if (data.instagram !== undefined) cleanData.instagram = data.instagram;
+    if (data.facebook !== undefined) cleanData.facebook = data.facebook;
 
     const updatedCompany = await prisma.company.update({
       where: { id: companyId },

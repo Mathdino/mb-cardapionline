@@ -23,12 +23,12 @@ export function FoodLoading({
     >
       {/* Spinning Outer Ring with Food Theme Color */}
       <div
-        className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#ce0707] border-r-[#ce0707]/30 animate-spin"
+        className="absolute inset-0 rounded-full border-4 border-transparent border-t-brand border-r-brand/30 animate-spin"
         style={{ animationDuration: "1.5s" }}
       />
 
       {/* Inner Pulsing Ring */}
-      <div className="absolute inset-2 rounded-full border-2 border-[#ce0707]/10 animate-pulse" />
+      <div className="absolute inset-2 rounded-full border-2 border-brand/10 animate-pulse" />
 
       {/* Center Content - Logo */}
       <div className="relative z-10 h-2/3 w-2/3 rounded-full bg-white p-2 shadow-sm flex items-center justify-center overflow-hidden">
@@ -42,7 +42,7 @@ export function FoodLoading({
             />
           </div>
         ) : (
-          <Utensils className="w-1/2 h-1/2 text-[#ce0707]" />
+          <Utensils className="w-1/2 h-1/2 text-brand" />
         )}
       </div>
     </div>

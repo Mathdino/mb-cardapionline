@@ -160,6 +160,7 @@ export function ScrollHeader({
                             <User className="h-5 w-5 text-muted-foreground" />
                             <span className="font-medium">Meu Perfil</span>
                           </Link>
+
                           <Link
                             href="/historico"
                             className="flex items-center gap-3 px-4 py-3 hover:bg-secondary rounded-lg transition-colors"
@@ -235,7 +236,7 @@ export function ScrollHeader({
             {onSearch && (
               <button
                 onClick={toggleSearch}
-                className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors shadow-sm"
+                className="bg-brand text-white p-2 rounded-full hover:opacity-90 transition-colors shadow-sm"
               >
                 <Search className="h-5 w-5" />
               </button>

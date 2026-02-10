@@ -23,6 +23,8 @@ model Company {
   paymentMethods String[]
   averagePreparationTime Int @default(40)
   isOpen         Boolean        @default(true)
+  instagram      String?
+  facebook       String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   categories     Category[]

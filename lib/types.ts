@@ -14,6 +14,8 @@ export interface Company {
   paymentMethods: PaymentMethod[];
   averagePreparationTime?: number;
   isOpen: boolean;
+  instagram?: string;
+  facebook?: string;
   createdAt: Date;
   updatedAt: Date;
 }

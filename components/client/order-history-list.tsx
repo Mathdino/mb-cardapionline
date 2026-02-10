@@ -96,7 +96,7 @@ function OrderProgress({ order }: { order: any }) {
           className="absolute inset-0 opacity-5 pointer-events-none"
           style={{
             backgroundImage:
-              "radial-gradient(circle, #888 1px, transparent 1px)",
+              "radial-gradient(circle, var(--muted-foreground) 1px, transparent 1px)",
             backgroundSize: "20px 20px",
           }}
         ></div>

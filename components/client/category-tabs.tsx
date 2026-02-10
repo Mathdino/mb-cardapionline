@@ -75,7 +75,7 @@ export function CategoryTabs({
               onClick={() => onCategoryChange(category.id)}
               className={`whitespace-nowrap px-4 py-3 text-sm font-bold uppercase transition-colors border-b-2 ${
                 activeCategory === category.id
-                  ? "border-red-600 text-red-600"
+                  ? "border-brand text-brand"
                   : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
