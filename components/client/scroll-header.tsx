@@ -12,6 +12,7 @@ import {
   Info,
   LogOut,
   LayoutDashboard,
+  Store,
 } from "lucide-react";
 import type { Company } from "@/lib/types";
 import { useSession, signOut } from "next-auth/react";
@@ -144,6 +145,14 @@ export function ScrollHeader({
                     <div className="flex flex-col gap-2">
                       {session?.user ? (
                         <>
+                          <Link
+                            href="/"
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-secondary rounded-lg transition-colors"
+                          >
+                            <Store className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-medium">Loja</span>
+                          </Link>
+
                           <Link
                             href="/perfil"
                             className="flex items-center gap-3 px-4 py-3 hover:bg-secondary rounded-lg transition-colors"

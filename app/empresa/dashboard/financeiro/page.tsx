@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import { getOrders } from "@/app/actions/order";
 import { Order } from "@/lib/types";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 type FilterPeriod = "today" | "week" | "month" | "year" | "custom";
 
@@ -200,6 +201,14 @@ export default function FinanceiroPage() {
       minute: "2-digit",
     }).format(new Date(date));
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <FoodLoading logoSrc={company?.profileImage} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

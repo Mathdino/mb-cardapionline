@@ -10,11 +10,12 @@ import {
 } from "@/lib/mock-data";
 import { formatPhone, formatCPF } from "@/lib/utils";
 import type { Order, OrderStatus } from "@/lib/types";
-import { Search, Filter, X, Phone, Clock, Loader2 } from "lucide-react";
+import { Search, Filter, X, Phone, Clock, MapPin, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { getOrders, updateOrderStatus } from "@/app/actions/order";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 const Loading = () => null;
 
@@ -89,6 +90,14 @@ export default function PedidosPage() {
   }, [company?.id]);
 
   if (!company) return null;
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <FoodLoading logoSrc={company?.profileImage} />
+      </div>
+    );
+  }
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -192,152 +201,125 @@ export default function PedidosPage() {
         </div>
 
         {/* Orders List */}
-        <div className="bg-card border rounded-xl overflow-hidden">
-          {isLoading ? (
-            <div className="flex justify-center items-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-secondary/50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                        Nº do Pedido
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                        Cliente
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                        Itens
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                        Total
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                        Data
-                      </th>
-                      <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
-                        Ações
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {filteredOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-secondary/30">
-                        <td className="px-4 py-3 text-sm text-foreground">
-                          #{order.id}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-foreground">
-                          {order.customerName}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {order.items.length} item(s)
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-foreground">
-                          {formatCurrency(order.total)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${orderStatusColors[order.status]}`}
-                          >
-                            {orderStatusLabels[order.status]}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {formatDate(order.createdAt)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="border"
-                              onClick={() => setSelectedOrder(order)}
-                            >
-                              Detalhes do Pedido
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="bg-[#25D366] text-white hover:bg-[#1DBF73]"
-                              onClick={() => {
-                                const digits = order.customerPhone.replace(
-                                  /\D/g,
-                                  "",
-                                );
-                                if (!digits) return;
-                                window.open(
-                                  `https://wa.me/${digits}`,
-                                  "_blank",
-                                );
-                              }}
-                            >
-                              WhatsApp
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredOrders.map((order) => (
+            <div
+              key={order.id}
+              className="bg-card border rounded-xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow"
+            >
+              {/* Card Header */}
+              <div className="p-4 border-b bg-secondary/20 flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">
+                      #{order.id.slice(-4)}
+                    </span>
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+                      {formatDate(order.createdAt).split(" ")[1]}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                    <Clock className="h-3 w-3" />
+                    {formatDate(order.createdAt)}
+                  </div>
+                </div>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${orderStatusColors[order.status]}`}
+                >
+                  {orderStatusLabels[order.status]}
+                </span>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-4 flex-1 space-y-4">
+                {/* Customer */}
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                    Cliente
+                  </h4>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium truncate mr-2">
+                      {order.customerName}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const digits = order.customerPhone.replace(/\D/g, "");
+                        if (digits)
+                          window.open(`https://wa.me/${digits}`, "_blank");
+                      }}
+                      title="Abrir WhatsApp"
+                    >
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {order.deliveryAddress ? (
+                    <div className="flex items-start gap-1.5 mt-2 text-xs text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <span className="line-clamp-2">
+                        {order.deliveryAddress.street},{" "}
+                        {order.deliveryAddress.number} -{" "}
+                        {order.deliveryAddress.neighborhood}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                      <Store className="h-3.5 w-3.5" />
+                      <span>Retirada no Balcão</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-border/50" />
+
+                {/* Items */}
+                <div>
+                  <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                    Itens ({order.items.length})
+                  </h4>
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto pr-1 scrollbar-thin">
+                    {order.items.map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground line-clamp-1">
+                          <span className="font-medium text-foreground">
+                            {item.quantity}x
+                          </span>{" "}
+                          {item.productName}
+                        </span>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
               </div>
 
-              {/* Mobile List */}
-              <div className="md:hidden divide-y">
-                {filteredOrders.map((order) => (
-                  <button
-                    key={order.id}
-                    onClick={() => setSelectedOrder(order)}
-                    className="w-full p-4 text-left hover:bg-secondary/30"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-foreground">
-                        {order.customerName}
-                      </span>
-                      <span
-                        className={`px-2 py-1.5 rounded-full text-sm font-medium ${orderStatusColors[order.status]}`}
-                      >
-                        {orderStatusLabels[order.status]}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1 mb-3">
-                      {order.items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="text-sm text-muted-foreground flex justify-between"
-                        >
-                          <span>
-                            {item.quantity}x {item.productName}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm text-muted-foreground border-t pt-2">
-                      <span>#{order.id}</span>
-                      <span className="font-medium text-foreground">
-                        {formatCurrency(order.total)}
-                      </span>
-                    </div>
-                  </button>
-                ))}
+              {/* Card Footer */}
+              <div className="p-4 bg-secondary/10 border-t mt-auto">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-lg font-bold">
+                    {formatCurrency(order.total)}
+                  </span>
+                </div>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setSelectedOrder(order)}
+                >
+                  Ver Detalhes
+                </Button>
               </div>
-
-              {filteredOrders.length === 0 && (
-                <p className="p-8 text-center text-muted-foreground">
-                  Nenhum pedido encontrado
-                </p>
-              )}
-            </>
-          )}
+            </div>
+          ))}
         </div>
+
+        {filteredOrders.length === 0 && (
+          <div className="bg-card border rounded-xl p-8 text-center text-muted-foreground">
+            Nenhum pedido encontrado
+          </div>
+        )}
 
         {/* Order Detail Modal */}
         {selectedOrder && (

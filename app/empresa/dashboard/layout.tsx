@@ -5,7 +5,7 @@ import React from "react"
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { CompanySidebar } from '@/components/company/sidebar'
-import { Loader2 } from 'lucide-react'
+import { FoodLoading } from '@/components/ui/food-loading'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <FoodLoading />
       </div>
     )
   }

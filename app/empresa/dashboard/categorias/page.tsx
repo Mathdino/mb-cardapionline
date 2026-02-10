@@ -10,8 +10,9 @@ import {
   updateCategory,
   deleteCategory,
 } from "@/app/actions/categories";
-import { Plus, Pencil, Trash2, GripVertical, X, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 export default function CategoriasPage() {
   const { getCompany } = useAuth();
@@ -39,7 +40,7 @@ export default function CategoriasPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <FoodLoading logoSrc={company?.profileImage} />
       </div>
     );
   }

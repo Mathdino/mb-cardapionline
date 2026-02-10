@@ -5,6 +5,8 @@ import "./globals.css";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Toaster } from "sonner";
 import { SiteFooter } from "@/components/client/site-footer";
+import { getCompanies } from "@/app/actions/company";
+import { RestaurantProvider } from "@/components/client/restaurant-context";
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -20,19 +22,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const companies = await getCompanies();
+  const defaultCompany = companies[0] || null;
+
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
         <AuthProvider>
-          {children}
-          <Toaster />
-          <Analytics />
-          <SiteFooter />
+          <RestaurantProvider company={defaultCompany}>
+            {children}
+            <Toaster />
+            <Analytics />
+            <SiteFooter />
+          </RestaurantProvider>
         </AuthProvider>
       </body>
     </html>

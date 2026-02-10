@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ImageCropper } from "@/components/client/image-cropper";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 function ProdutosContent() {
   const searchParams = useSearchParams();
@@ -261,7 +262,7 @@ function ProdutosContent() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <FoodLoading logoSrc={company?.profileImage} />
       </div>
     );
   }

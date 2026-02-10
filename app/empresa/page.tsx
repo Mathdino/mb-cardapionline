@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 export default function EmpresaLoginPage() {
   const [email, setEmail] = useState("");
@@ -48,7 +49,7 @@ export default function EmpresaLoginPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <FoodLoading />
       </div>
     );
   }

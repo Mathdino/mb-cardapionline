@@ -29,6 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 export default function InformacoesPage() {
   const { getCompany, updateCompanyData } = useAuth();
@@ -90,7 +91,9 @@ export default function InformacoesPage() {
                 city: typedCompany.address?.city || "",
                 state: typedCompany.address?.state || "",
               },
-              phone: Array.isArray(typedCompany.phone) ? typedCompany.phone : [],
+              phone: Array.isArray(typedCompany.phone)
+                ? typedCompany.phone
+                : [],
               paymentMethods: Array.isArray(typedCompany.paymentMethods)
                 ? typedCompany.paymentMethods
                 : [],
@@ -137,7 +140,13 @@ export default function InformacoesPage() {
     [],
   );
 
-  if (!company || !formData) return null;
+  if (!formData || !company) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <FoodLoading logoSrc={company?.profileImage} />
+      </div>
+    );
+  }
 
   const handleImageSelect = (
     e: React.ChangeEvent<HTMLInputElement>,

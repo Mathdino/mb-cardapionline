@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 export default function CuponsPage() {
   const { getCompany } = useAuth();
@@ -143,8 +144,8 @@ export default function CuponsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="h-full flex items-center justify-center py-12">
+          <FoodLoading logoSrc={company?.profileImage} />
         </div>
       ) : coupons.length === 0 ? (
         <div className="bg-card border rounded-xl p-12 text-center space-y-4">

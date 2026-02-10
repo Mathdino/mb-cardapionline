@@ -19,9 +19,10 @@ import {
   togglePromotionStatus,
 } from "@/app/actions/promotions";
 import type { Product, Promotion } from "@/lib/types";
-import { Plus, Pencil, Trash2, X, Tag, ImageIcon, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Tag, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ImageCropper } from "@/components/client/image-cropper";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 export default function PromocoesPage() {
   const { getCompany } = useAuth();
@@ -384,6 +385,14 @@ export default function PromocoesPage() {
       setIsUploading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <FoodLoading logoSrc={company?.profileImage} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

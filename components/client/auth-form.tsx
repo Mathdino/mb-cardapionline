@@ -9,8 +9,11 @@ import { Label } from "@/components/ui/label";
 import { registerCustomer } from "@/app/actions/customer-auth";
 import { toast } from "sonner";
 import Image from "next/image";
+import { FoodLoading } from "@/components/ui/food-loading";
+import { useRestaurant } from "@/components/client/restaurant-context";
 
 export function AuthForm() {
+  const { company } = useRestaurant();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -94,89 +97,96 @@ export function AuthForm() {
   };
 
   return (
-    <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-      <div className="flex mb-6 border-b">
-        <button
-          className={`flex-1 pb-2 font-medium ${isLogin ? "border-b-2 border-primary text-primary" : "text-gray-500"}`}
-          onClick={() => setIsLogin(true)}
-        >
-          Entrar
-        </button>
-        <button
-          className={`flex-1 pb-2 font-medium ${!isLogin ? "border-b-2 border-primary text-primary" : "text-gray-500"}`}
-          onClick={() => setIsLogin(false)}
-        >
-          Criar Conta
-        </button>
-      </div>
-
-      <Button
-        variant="outline"
-        className="w-full mb-4 flex items-center justify-center gap-2"
-        onClick={() => signIn("google", { callbackUrl: "/perfil" })}
-      >
-        <Image
-          src="/icon-google.svg"
-          alt="Google"
-          width={20}
-          height={20}
-          className="w-5 h-5"
-        />
-        Continuar com Google
-      </Button>
-
-      <div className="relative mb-4">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
+    <>
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+          <FoodLoading size={100} logoSrc={company?.profileImage} />
         </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-2 text-muted-foreground">
-            ou continue com CPF
-          </span>
+      )}
+      <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
+        <div className="flex mb-6 border-b">
+          <button
+            className={`flex-1 pb-2 font-medium ${isLogin ? "border-b-2 border-primary text-primary" : "text-gray-500"}`}
+            onClick={() => setIsLogin(true)}
+          >
+            Entrar
+          </button>
+          <button
+            className={`flex-1 pb-2 font-medium ${!isLogin ? "border-b-2 border-primary text-primary" : "text-gray-500"}`}
+            onClick={() => setIsLogin(false)}
+          >
+            Criar Conta
+          </button>
         </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {!isLogin && (
+        <Button
+          variant="outline"
+          className="w-full mb-4 flex items-center justify-center gap-2"
+          onClick={() => signIn("google", { callbackUrl: "/perfil" })}
+        >
+          <Image
+            src="/icon-google.svg"
+            alt="Google"
+            width={20}
+            height={20}
+            className="w-5 h-5"
+          />
+          Continuar com Google
+        </Button>
+
+        <div className="relative mb-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-muted-foreground">
+              ou continue com CPF
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div>
+              <Label htmlFor="name">Nome Completo</Label>
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+          )}
           <div>
-            <Label htmlFor="name">Nome Completo</Label>
+            <Label htmlFor="cpf">CPF</Label>
             <Input
-              id="name"
-              name="name"
-              value={formData.name}
+              id="cpf"
+              name="cpf"
+              value={formData.cpf}
+              onChange={handleInputChange}
+              required
+              placeholder="000.000.000-00"
+              maxLength={14}
+            />
+          </div>
+          <div>
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
               onChange={handleInputChange}
               required
             />
           </div>
-        )}
-        <div>
-          <Label htmlFor="cpf">CPF</Label>
-          <Input
-            id="cpf"
-            name="cpf"
-            value={formData.cpf}
-            onChange={handleInputChange}
-            required
-            placeholder="000.000.000-00"
-            maxLength={14}
-          />
-        </div>
-        <div>
-          <Label htmlFor="password">Senha</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Carregando..." : isLogin ? "Entrar" : "Criar Conta"}
-        </Button>
-      </form>
-    </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "Carregando..." : isLogin ? "Entrar" : "Criar Conta"}
+          </Button>
+        </form>
+      </div>
+    </>
   );
 }

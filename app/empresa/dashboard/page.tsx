@@ -14,9 +14,10 @@ import {
   orderStatusColors,
   cn,
 } from "@/lib/utils";
-import { Package, ShoppingBag, TrendingUp, Loader2 } from "lucide-react";
+import { Package, ShoppingBag, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import type { OrderStatus } from "@/lib/types";
+import { FoodLoading } from "@/components/ui/food-loading";
 
 export default function DashboardPage() {
   const { getCompany } = useAuth();
@@ -40,7 +41,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <FoodLoading logoSrc={company?.profileImage} />
       </div>
     );
   }
