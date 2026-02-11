@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useAuth } from "@/lib/auth-context";
 import Image from "next/image";
@@ -36,7 +36,10 @@ export default function DashboardPage() {
     loadStats();
   }, [company]);
 
-  if (!company) return null;
+  if (!company) {
+    console.log("Empresa não encontrada no DashboardPage");
+    return <div className="p-4">Empresa não encontrada no contexto de autenticação.</div>;
+  }
 
   if (loading) {
     return (

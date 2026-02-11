@@ -8,6 +8,8 @@ import {
   X,
   MessageCircle,
   Loader2,
+  MapPin,
+  Pencil,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -22,9 +24,25 @@ import {
 } from "@/lib/utils";
 import type { Company, PaymentMethod } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { createOrder } from "@/app/actions/order";
 import { OrderItem } from "@/lib/types";
 import { useSession } from "next-auth/react";
+
+import { useAuth } from "@/lib/auth-context";
 
 interface CartSheetProps {
   company: Company;
@@ -46,12 +64,14 @@ export function CartSheet({ company }: CartSheetProps) {
   });
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPrefilled, setHasPrefilled] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const { data: session } = useSession();
+  const { user: authUser } = useAuth();
 
   const {
     items,
@@ -88,8 +108,27 @@ export function CartSheet({ company }: CartSheetProps) {
         });
       }
       setHasPrefilled(true);
+    } else if (authUser && !hasPrefilled) {
+      setCustomerName(authUser.name || "");
+      if (authUser.phone) {
+        setCustomerPhone(authUser.phone);
+      }
+      if (authUser.cpf) {
+        setCustomerCpf(authUser.cpf);
+      }
+      if (authUser.address) {
+        setDeliveryAddress({
+          street: authUser.address.street || "",
+          number: authUser.address.number || "",
+          neighborhood: authUser.address.neighborhood || "",
+          city: authUser.address.city || "",
+          state: authUser.address.state || "",
+          cep: authUser.address.cep || "",
+        });
+      }
+      setHasPrefilled(true);
     }
-  }, [session, hasPrefilled]);
+  }, [session, authUser, hasPrefilled]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -166,7 +205,7 @@ export function CartSheet({ company }: CartSheetProps) {
         total,
         paymentMethod,
         notes,
-        userId: session?.user?.id,
+        userId: session?.user?.id || authUser?.id,
         couponId: coupon?.id,
         discount,
       });
@@ -559,142 +598,57 @@ export function CartSheet({ company }: CartSheetProps) {
 
                   {/* Delivery Address */}
                   <div className="space-y-4 pt-2">
-                    <h3 className="font-semibold text-foreground">
-                      Endereço de Entrega
-                    </h3>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          CEP
-                        </label>
-                        <input
-                          type="text"
-                          value={deliveryAddress.cep}
-                          onChange={(e) => {
-                            const newCep = formatCEP(e.target.value);
-                            setDeliveryAddress({
-                              ...deliveryAddress,
-                              cep: newCep,
-                            });
-                            if (newCep.length === 9) {
-                              fetch(
-                                `https://viacep.com.br/ws/${newCep.replace(/\D/g, "")}/json/`,
-                              )
-                                .then((res) => res.json())
-                                .then((data) => {
-                                  if (!data.erro) {
-                                    setDeliveryAddress((prev) => ({
-                                      ...prev,
-                                      street: data.logradouro,
-                                      neighborhood: data.bairro,
-                                      city: data.localidade,
-                                      state: data.uf,
-                                      cep: newCep,
-                                    }));
-                                  }
-                                })
-                                .catch(() => {});
-                            }
-                          }}
-                          placeholder="00000-000"
-                          maxLength={9}
-                          className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Rua
-                      </label>
-                      <input
-                        type="text"
-                        value={deliveryAddress.street}
-                        onChange={(e) =>
-                          setDeliveryAddress({
-                            ...deliveryAddress,
-                            street: e.target.value,
-                          })
-                        }
-                        placeholder="Nome da rua"
-                        className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Bairro
-                        </label>
-                        <input
-                          type="text"
-                          value={deliveryAddress.neighborhood}
-                          onChange={(e) =>
-                            setDeliveryAddress({
-                              ...deliveryAddress,
-                              neighborhood: e.target.value,
-                            })
-                          }
-                          placeholder="Bairro"
-                          className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Nº
-                        </label>
-                        <input
-                          type="text"
-                          value={deliveryAddress.number}
-                          onChange={(e) =>
-                            setDeliveryAddress({
-                              ...deliveryAddress,
-                              number: e.target.value,
-                            })
-                          }
-                          placeholder="123"
-                          className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          Cidade
-                        </label>
-                        <input
-                          type="text"
-                          value={deliveryAddress.city}
-                          onChange={(e) =>
-                            setDeliveryAddress({
-                              ...deliveryAddress,
-                              city: e.target.value,
-                            })
-                          }
-                          placeholder="Cidade"
-                          className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-foreground mb-2">
-                          UF
-                        </label>
-                        <input
-                          type="text"
-                          value={deliveryAddress.state}
-                          onChange={(e) =>
-                            setDeliveryAddress({
-                              ...deliveryAddress,
-                              state: e.target.value,
-                            })
-                          }
-                          placeholder="UF"
-                          className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                      </div>
-                    </div>
+                    <Card className="p-0 border-2 border-primary/10 overflow-hidden shadow-none">
+                      <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between bg-primary/5 space-y-0">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-primary" />
+                          <CardTitle className="text-base">
+                            Endereço de Entrega
+                          </CardTitle>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowAddressDialog(true)}
+                          className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10 gap-1"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Alterar
+                        </Button>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        {deliveryAddress.street ? (
+                          <div className="space-y-1 text-sm">
+                            <p className="font-medium text-foreground">
+                              {deliveryAddress.street}, {deliveryAddress.number}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {deliveryAddress.neighborhood}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {deliveryAddress.city} - {deliveryAddress.state}
+                            </p>
+                            <p className="text-muted-foreground">
+                              CEP: {deliveryAddress.cep}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="py-2 text-center">
+                            <p className="text-sm text-muted-foreground italic mb-2">
+                              Nenhum endereço informado
+                            </p>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowAddressDialog(true)}
+                              className="w-full"
+                            >
+                              Adicionar Endereço
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
 
                   {/* Notes */}
@@ -838,6 +792,156 @@ export function CartSheet({ company }: CartSheetProps) {
           </div>
         </div>
       )}
+
+      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Endereço de Entrega</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  CEP
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress.cep}
+                  onChange={(e) => {
+                    const newCep = formatCEP(e.target.value);
+                    setDeliveryAddress({
+                      ...deliveryAddress,
+                      cep: newCep,
+                    });
+                    if (newCep.length === 9) {
+                      fetch(
+                        `https://viacep.com.br/ws/${newCep.replace(/\D/g, "")}/json/`,
+                      )
+                        .then((res) => res.json())
+                        .then((data) => {
+                          if (!data.erro) {
+                            setDeliveryAddress((prev) => ({
+                              ...prev,
+                              street: data.logradouro,
+                              neighborhood: data.bairro,
+                              city: data.localidade,
+                              state: data.uf,
+                              cep: newCep,
+                            }));
+                          }
+                        })
+                        .catch(() => {});
+                    }
+                  }}
+                  placeholder="00000-000"
+                  maxLength={9}
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Rua
+              </label>
+              <input
+                type="text"
+                value={deliveryAddress.street}
+                onChange={(e) =>
+                  setDeliveryAddress({
+                    ...deliveryAddress,
+                    street: e.target.value,
+                  })
+                }
+                placeholder="Nome da rua"
+                className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Bairro
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress.neighborhood}
+                  onChange={(e) =>
+                    setDeliveryAddress({
+                      ...deliveryAddress,
+                      neighborhood: e.target.value,
+                    })
+                  }
+                  placeholder="Bairro"
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Nº
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress.number}
+                  onChange={(e) =>
+                    setDeliveryAddress({
+                      ...deliveryAddress,
+                      number: e.target.value,
+                    })
+                  }
+                  placeholder="123"
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Cidade
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress.city}
+                  onChange={(e) =>
+                    setDeliveryAddress({
+                      ...deliveryAddress,
+                      city: e.target.value,
+                    })
+                  }
+                  placeholder="Cidade"
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  UF
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress.state}
+                  onChange={(e) =>
+                    setDeliveryAddress({
+                      ...deliveryAddress,
+                      state: e.target.value,
+                    })
+                  }
+                  placeholder="UF"
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setShowAddressDialog(false)}
+              className="w-full"
+            >
+              Confirmar Endereço
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

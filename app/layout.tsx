@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
-import { AuthProvider } from "@/components/providers/auth-provider";
+import { NextAuthProvider } from "@/components/providers/next-auth-provider";
+import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "sonner";
 import { SiteFooter } from "@/components/client/site-footer";
 import { getCompanies } from "@/app/actions/company";
@@ -33,14 +34,16 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        <AuthProvider>
-          <RestaurantProvider company={defaultCompany}>
-            {children}
-            <Toaster />
-            <Analytics />
-            <SiteFooter />
-          </RestaurantProvider>
-        </AuthProvider>
+        <NextAuthProvider>
+          <AuthProvider>
+            <RestaurantProvider company={defaultCompany}>
+              {children}
+              <Toaster />
+              <Analytics />
+              <SiteFooter />
+            </RestaurantProvider>
+          </AuthProvider>
+        </NextAuthProvider>
       </body>
     </html>
   );

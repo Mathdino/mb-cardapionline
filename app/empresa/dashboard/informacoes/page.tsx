@@ -16,6 +16,14 @@ import {
   Check,
   ZoomIn,
   ZoomOut,
+  Building2,
+  MapPin,
+  Clock,
+  Smartphone,
+  Settings,
+  Palette,
+  CreditCard,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPhone, getCroppedImg } from "@/lib/utils";
@@ -27,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { FoodLoading } from "@/components/ui/food-loading";
@@ -34,6 +43,7 @@ import { FoodLoading } from "@/components/ui/food-loading";
 export default function InformacoesPage() {
   const { getCompany, updateCompanyData } = useAuth();
   const company = getCompany();
+  const [activeDialog, setActiveDialog] = useState<string | null>(null);
   const [formData, setFormData] = useState<Company | null>(
     company
       ? {
@@ -144,7 +154,16 @@ export default function InformacoesPage() {
     [],
   );
 
-  if (!formData || !company) {
+  if (!company) {
+    console.log("Empresa não encontrada no InformacoesPage");
+    return (
+      <div className="p-4">
+        Empresa não encontrada no contexto de autenticação.
+      </div>
+    );
+  }
+
+  if (!formData) {
     return (
       <div className="h-full flex items-center justify-center">
         <FoodLoading logoSrc={company?.profileImage} />
@@ -286,45 +305,85 @@ export default function InformacoesPage() {
     }
   };
 
+  const handleDialogSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSubmit(e);
+    setActiveDialog(null);
+  };
+
   const updateAddress = (field: keyof Company["address"], value: string) => {
     setFormData((prev) =>
       prev
         ? {
             ...prev,
-            address: { ...prev.address, [field]: value },
+            address: {
+              ...prev.address,
+              [field]: value,
+            },
           }
         : null,
     );
+  };
+
+  const fetchAddressByCep = async (cep: string) => {
+    const cleanedCep = cep.replace(/\D/g, "");
+    if (cleanedCep.length !== 8) return;
+
+    try {
+      const response = await fetch(
+        `https://viacep.com.br/ws/${cleanedCep}/json/`,
+      );
+      const data = await response.json();
+
+      if (!data.erro) {
+        setFormData((prev) =>
+          prev
+            ? {
+                ...prev,
+                address: {
+                  ...prev.address,
+                  street: data.logradouro || prev.address.street,
+                  neighborhood: data.bairro || prev.address.neighborhood,
+                  city: data.localidade || prev.address.city,
+                  state: data.uf || prev.address.state,
+                },
+              }
+            : null,
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+    }
   };
 
   const updateBusinessHours = (
-    dayIndex: number,
+    index: number,
     field: keyof BusinessHours,
-    value: string | boolean,
+    value: any,
   ) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            businessHours: prev.businessHours.map((day, i) =>
-              i === dayIndex ? { ...day, [field]: value } : day,
-            ),
-          }
-        : null,
-    );
+    setFormData((prev) => {
+      if (!prev) return null;
+      const newHours = [...prev.businessHours];
+      newHours[index] = { ...newHours[index], [field]: value };
+      return { ...prev, businessHours: newHours };
+    });
   };
 
-  const togglePaymentMethod = (method: PaymentMethod) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            paymentMethods: prev.paymentMethods.includes(method)
-              ? prev.paymentMethods.filter((m) => m !== method)
-              : [...prev.paymentMethods, method],
-          }
-        : null,
-    );
+  const updatePhone = (index: number, value: string) => {
+    setFormData((prev) => {
+      if (!prev) return null;
+      const newPhones = [...prev.phone];
+      newPhones[index] = formatPhone(value);
+      return { ...prev, phone: newPhones };
+    });
+  };
+
+  const removePhone = (index: number) => {
+    setFormData((prev) => {
+      if (!prev) return null;
+      const newPhones = prev.phone.filter((_, i) => i !== index);
+      return { ...prev, phone: newPhones };
+    });
   };
 
   const addPhone = () => {
@@ -338,127 +397,233 @@ export default function InformacoesPage() {
     );
   };
 
-  const updatePhone = (index: number, value: string) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            phone: prev.phone.map((p, i) =>
-              i === index ? formatPhone(value) : p,
-            ),
-          }
-        : null,
-    );
-  };
-
-  const removePhone = (index: number) => {
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            phone: prev.phone.filter((_, i) => i !== index),
-          }
-        : null,
-    );
-  };
-
-  const fetchAddressByCep = async (cep: string) => {
-    const cleanCep = cep.replace(/\D/g, "");
-    if (cleanCep.length !== 8) return;
-
-    try {
-      const response = await fetch(
-        `https://viacep.com.br/ws/${cleanCep}/json/`,
-      );
-      const data = await response.json();
-
-      if (!data.erro) {
-        setFormData((prev) =>
-          prev
-            ? {
-                ...prev,
-                address: {
-                  ...prev.address,
-                  cep: cleanCep,
-                  street: data.logradouro || "",
-                  neighborhood: data.bairro || "",
-                  city: data.localidade || "",
-                  state: data.uf || "",
-                },
-              }
-            : null,
-        );
+  const togglePaymentMethod = (method: PaymentMethod) => {
+    setFormData((prev) => {
+      if (!prev) return null;
+      const methods = [...prev.paymentMethods];
+      const index = methods.indexOf(method);
+      if (index > -1) {
+        methods.splice(index, 1);
+      } else {
+        methods.push(method);
       }
-    } catch (error) {
-      console.log("Error fetching CEP:", error);
-    }
+      return { ...prev, paymentMethods: methods };
+    });
   };
 
-  return (
-    <div className="space-y-6 max-w-4xl">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">
-          Informações da Empresa
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Configure os dados da sua loja
-        </p>
-      </div>
-
-      {/* Message */}
-      {message && (
-        <div
-          className={`p-4 rounded-lg ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700 border border-green-200"
-              : "bg-red-100 text-red-700 border border-red-200"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Info */}
-        <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
-          <h2 className="font-bold text-foreground border-b pb-3">
-            Dados Básicos
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Nome da Empresa
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) =>
-                    prev ? { ...prev, name: e.target.value } : null,
-                  )
-                }
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+  const menuSections = [
+    {
+      title: "Minha Empresa",
+      items: [
+        {
+          id: "dados",
+          icon: Building2,
+          title: "Dados da Empresa",
+          description: "Nome do estabelecimento e descrição",
+          content: (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nome da Empresa</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData((prev) =>
+                      prev ? { ...prev, name: e.target.value } : null,
+                    )
+                  }
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Descrição</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev) =>
+                      prev ? { ...prev, description: e.target.value } : null,
+                    )
+                  }
+                  rows={4}
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background resize-none"
+                />
+              </div>
             </div>
+          ),
+        },
+        {
+          id: "endereco",
+          icon: MapPin,
+          title: "Endereço",
+          description: `${formData.address.street}, ${formData.address.number}, ${formData.address.neighborhood}`,
+          content: (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">CEP</label>
+                  <input
+                    type="text"
+                    value={formData.address.cep}
+                    onChange={(e) => updateAddress("cep", e.target.value)}
+                    onBlur={(e) => fetchAddressByCep(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <label className="text-sm font-medium">Rua</label>
+                  <input
+                    type="text"
+                    value={formData.address.street}
+                    onChange={(e) => updateAddress("street", e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Número</label>
+                  <input
+                    type="text"
+                    value={formData.address.number}
+                    onChange={(e) => updateAddress("number", e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Bairro</label>
+                  <input
+                    type="text"
+                    value={formData.address.neighborhood}
+                    onChange={(e) =>
+                      updateAddress("neighborhood", e.target.value)
+                    }
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Cidade</label>
+                  <input
+                    type="text"
+                    value={formData.address.city}
+                    onChange={(e) => updateAddress("city", e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
+                  />
+                </div>
+              </div>
+            </div>
+          ),
+        },
+        {
+          id: "horarios",
+          icon: Clock,
+          title: "Horários de Funcionamento",
+          description: "Defina os horários de abertura e fechamento",
+          content: (
+            <div className="space-y-3 py-4 max-h-[60vh] overflow-y-auto pr-2">
+              {formData.businessHours?.map((day, index) => (
+                <div
+                  key={day.dayOfWeek}
+                  className="flex flex-wrap items-center gap-3 p-3 bg-secondary/30 rounded-lg"
+                >
+                  <label className="flex items-center gap-2 w-28">
+                    <input
+                      type="checkbox"
+                      checked={day.isOpen}
+                      onChange={(e) =>
+                        updateBusinessHours(index, "isOpen", e.target.checked)
+                      }
+                      className="h-4 w-4 rounded border-input"
+                    />
+                    <span className="font-medium">{day.dayName}</span>
+                  </label>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Descrição
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData((prev) =>
-                    prev ? { ...prev, description: e.target.value } : null,
-                  )
-                }
-                rows={3}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-              />
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                  {day.isOpen && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={day.openTime}
+                        onChange={(e) =>
+                          updateBusinessHours(index, "openTime", e.target.value)
+                        }
+                        className="px-2 py-1 rounded border bg-background text-sm"
+                      />
+                      <span>até</span>
+                      <input
+                        type="time"
+                        value={day.closeTime}
+                        onChange={(e) =>
+                          updateBusinessHours(
+                            index,
+                            "closeTime",
+                            e.target.value,
+                          )
+                        }
+                        className="px-2 py-1 rounded border bg-background text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ),
+        },
+        {
+          id: "telefones",
+          icon: Smartphone,
+          title: "Telefones de Contato",
+          description: `${formData.phone.length} telefone(s) cadastrado(s)`,
+          content: (
+            <div className="space-y-4 py-4">
+              <div className="space-y-3">
+                {formData.phone.map((p, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={p}
+                      onChange={(e) => updatePhone(index, e.target.value)}
+                      placeholder="(00) 00000-0000"
+                      className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-red-500"
+                      onClick={() => removePhone(index)}
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={addPhone}
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar Telefone
+              </Button>
+            </div>
+          ),
+        },
+      ],
+    },
+    {
+      title: "Configurações",
+      items: [
+        {
+          id: "entrega",
+          icon: Settings,
+          title: "Valor Mínimo e Entrega",
+          description: "Valor mínimo, entrega e retirada",
+          content: (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
                   Valor Mínimo do Pedido (R$)
                 </label>
                 <input
@@ -476,12 +641,11 @@ export default function InformacoesPage() {
                   }
                   step="0.01"
                   min="0"
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
                   Tempo Médio de Preparo (minutos)
                 </label>
                 <input
@@ -499,77 +663,69 @@ export default function InformacoesPage() {
                     )
                   }
                   min="1"
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-background"
                 />
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Social Info */}
-        <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
-          <h2 className="font-bold text-foreground border-b pb-3">
-            Redes Sociais
-          </h2>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Instagram
-              </label>
-              <input
-                type="text"
-                value={formData.instagram || ""}
-                onChange={(e) =>
-                  setFormData((prev) =>
-                    prev ? { ...prev, instagram: e.target.value } : null,
-                  )
-                }
-                placeholder="Ex: @seurestaurante"
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Facebook
-              </label>
-              <input
-                type="text"
-                value={formData.facebook || ""}
-                onChange={(e) =>
-                  setFormData((prev) =>
-                    prev ? { ...prev, facebook: e.target.value } : null,
-                  )
-                }
-                placeholder="Ex: facebook.com/seurestaurante"
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Images */}
-        <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
-          <h2 className="font-bold text-foreground border-b pb-3">Imagens</h2>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Foto de Perfil
-              </label>
-              <div className="relative h-32 w-32 rounded-full border-2 border-dashed border-border overflow-hidden bg-secondary">
-                {formData.profileImage ? (
-                  <Image
-                    src={formData.profileImage || "/placeholder.svg"}
-                    alt="Profile"
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
+          ),
+        },
+        {
+          id: "aparencia",
+          icon: Palette,
+          title: "Aparência",
+          description: "Foto de perfil e banner da loja",
+          content: (
+            <div className="space-y-6 py-4">
+              <div className="space-y-4">
+                <label className="text-sm font-medium">Foto de Perfil</label>
+                <div className="flex items-center gap-6">
+                  <div className="relative h-24 w-24 rounded-full border-2 border-dashed border-border overflow-hidden bg-secondary">
+                    {formData.profileImage ? (
+                      <Image
+                        src={formData.profileImage}
+                        alt="Profile"
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
                   </div>
-                )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => profileImageInputRef.current?.click()}
+                  >
+                    Alterar foto
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <label className="text-sm font-medium">Banner da Loja</label>
+                <div className="relative h-32 w-full rounded-lg border-2 border-dashed border-border overflow-hidden bg-secondary">
+                  {formData.bannerImage ? (
+                    <Image
+                      src={formData.bannerImage}
+                      alt="Banner"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => bannerImageInputRef.current?.click()}
+                >
+                  Alterar banner
+                </Button>
               </div>
               <input
                 type="file"
@@ -578,39 +734,6 @@ export default function InformacoesPage() {
                 accept="image/*"
                 onChange={(e) => handleImageUpload(e, "profileImage")}
               />
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-sm text-muted-foreground">
-                  Recomendado: 200x200px
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => profileImageInputRef.current?.click()}
-                >
-                  Alterar foto
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Banner
-              </label>
-              <div className="relative h-32 w-full rounded-lg border-2 border-dashed border-border overflow-hidden bg-secondary">
-                {formData.bannerImage ? (
-                  <Image
-                    src={formData.bannerImage || "/placeholder.svg"}
-                    alt="Banner"
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
               <input
                 type="file"
                 ref={bannerImageInputRef}
@@ -618,295 +741,186 @@ export default function InformacoesPage() {
                 accept="image/*"
                 onChange={(e) => handleImageUpload(e, "bannerImage")}
               />
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-sm text-muted-foreground">
-                  Recomendado: 1200x300px
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => bannerImageInputRef.current?.click()}
+            </div>
+          ),
+        },
+        {
+          id: "pagamento",
+          icon: CreditCard,
+          title: "Formas de Pagamento",
+          description: "Formas de pagamento aceitas",
+          content: (
+            <div className="space-y-3 py-4">
+              {Object.entries(paymentMethodLabels).map(([key, label]) => {
+                const method = key as PaymentMethod;
+                const isSelected = formData.paymentMethods.includes(method);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => togglePaymentMethod(method)}
+                    className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border bg-card text-foreground hover:bg-secondary/50"
+                    }`}
+                  >
+                    <span className="font-medium">{label}</span>
+                    {isSelected ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full border" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ),
+        },
+      ],
+    },
+  ];
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8 pb-20">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Configurações</h1>
+        <p className="text-muted-foreground mt-1">
+          Gerencie as informações e preferências da sua loja
+        </p>
+      </div>
+
+      {/* Message */}
+      {message && (
+        <div
+          className={`p-4 rounded-lg flex items-center gap-3 ${
+            message.type === "success"
+              ? "bg-green-100 text-green-700 border border-green-200"
+              : "bg-red-100 text-red-700 border border-red-200"
+          }`}
+        >
+          {message.type === "success" ? (
+            <Check className="h-5 w-5" />
+          ) : (
+            <X className="h-5 w-5" />
+          )}
+          {message.text}
+        </div>
+      )}
+
+      {/* Menu Sections */}
+      <div className="space-y-8">
+        {menuSections.map((section) => (
+          <div key={section.title} className="space-y-4">
+            <h2 className="text-lg font-bold px-1">{section.title}</h2>
+            <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
+              {section.items.map((item, index) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveDialog(item.id)}
+                  className={`w-full flex items-center gap-4 p-4 hover:bg-secondary/50 transition-colors text-left ${
+                    index !== section.items.length - 1 ? "border-b" : ""
+                  }`}
                 >
-                  Alterar banner
-                </Button>
-              </div>
+                  <div className="p-2.5 bg-secondary rounded-xl text-muted-foreground">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground leading-tight">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground truncate mt-0.5">
+                      {item.description}
+                    </p>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground/50" />
+                </button>
+              ))}
             </div>
           </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Phones */}
-        <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <h2 className="font-bold text-foreground">Telefones</h2>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addPhone}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar
-            </Button>
-          </div>
+      {/* Edit Dialogs */}
+      {menuSections
+        .flatMap((s) => s.items)
+        .map((item) => (
+          <Dialog
+            key={item.id}
+            open={activeDialog === item.id}
+            onOpenChange={(open) => !open && setActiveDialog(null)}
+          >
+            <DialogContent className="sm:max-w-[500px]">
+              <form onSubmit={handleDialogSave}>
+                <DialogHeader>
+                  <DialogTitle>{item.title}</DialogTitle>
+                  <DialogDescription>
+                    Altere as informações abaixo e clique em salvar.
+                  </DialogDescription>
+                </DialogHeader>
 
-          <div className="space-y-3">
-            {formData.phone.map((phone, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) =>
-                    updatePhone(index, formatPhone(e.target.value))
-                  }
-                  placeholder="(11) 99999-9999"
-                  maxLength={15}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                {formData.phone.length > 1 && (
+                {item.content}
+
+                <DialogFooter className="pt-4">
                   <Button
                     type="button"
                     variant="ghost"
-                    size="icon"
-                    onClick={() => removePhone(index)}
-                    className="text-destructive hover:text-destructive"
+                    onClick={() => setActiveDialog(null)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    Cancelar
                   </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? "Salvando..." : "Salvar Alterações"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        ))}
 
-        {/* Address */}
-        <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
-          <h2 className="font-bold text-foreground border-b pb-3">Endereço</h2>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                CEP
-              </label>
-              <input
-                type="text"
-                value={formData.address.cep}
-                onChange={(e) => {
-                  updateAddress("cep", e.target.value);
-                  if (e.target.value.replace(/\D/g, "").length === 8) {
-                    fetchAddressByCep(e.target.value);
-                  }
-                }}
-                placeholder="00000-000"
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Rua
-              </label>
-              <input
-                type="text"
-                value={formData.address.street}
-                onChange={(e) => updateAddress("street", e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Número
-              </label>
-              <input
-                type="text"
-                value={formData.address.number}
-                onChange={(e) => updateAddress("number", e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Bairro
-              </label>
-              <input
-                type="text"
-                value={formData.address.neighborhood}
-                onChange={(e) => updateAddress("neighborhood", e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Cidade
-              </label>
-              <input
-                type="text"
-                value={formData.address.city}
-                onChange={(e) => updateAddress("city", e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Estado
-              </label>
-              <input
-                type="text"
-                value={formData.address.state}
-                onChange={(e) => updateAddress("state", e.target.value)}
-                maxLength={2}
-                className="w-full px-4 py-2.5 rounded-lg border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Business Hours */}
-        <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
-          <h2 className="font-bold text-foreground border-b pb-3">
-            Horários de Funcionamento
-          </h2>
-
-          <div className="space-y-3">
-            {formData.businessHours?.map((day, index) => (
-              <div
-                key={day.dayOfWeek}
-                className="flex flex-wrap items-center gap-3 p-3 bg-secondary/30 rounded-lg"
-              >
-                <label className="flex items-center gap-2 w-28">
-                  <input
-                    type="checkbox"
-                    checked={day.isOpen}
-                    onChange={(e) =>
-                      updateBusinessHours(index, "isOpen", e.target.checked)
-                    }
-                    className="h-4 w-4 rounded border-input"
-                  />
-                  <span className="font-medium text-foreground">
-                    {day.dayName}
-                  </span>
-                </label>
-
-                {day.isOpen && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="time"
-                      value={day.openTime}
-                      onChange={(e) =>
-                        updateBusinessHours(index, "openTime", e.target.value)
-                      }
-                      className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                    <span className="text-muted-foreground">até</span>
-                    <input
-                      type="time"
-                      value={day.closeTime}
-                      onChange={(e) =>
-                        updateBusinessHours(index, "closeTime", e.target.value)
-                      }
-                      className="px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                )}
-
-                {!day.isOpen && (
-                  <span className="text-muted-foreground text-sm">Fechado</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Payment Methods */}
-        <div className="bg-card border rounded-xl p-4 md:p-6 space-y-4">
-          <h2 className="font-bold text-foreground border-b pb-3">
-            Selecione as Formas de Pagamento
-          </h2>
-
-          <div className="flex flex-wrap gap-3">
-            {(Object.keys(paymentMethodLabels) as PaymentMethod[]).map(
-              (method) => (
-                <button
-                  key={method}
-                  type="button"
-                  onClick={() => togglePaymentMethod(method)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    formData.paymentMethods.includes(method)
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  {paymentMethodLabels[method]}
-                </button>
-              ),
-            )}
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSaving} className="min-w-[150px]">
-            {isSaving ? (
-              "Salvando..."
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Alterações
-              </>
-            )}
-          </Button>
-        </div>
-      </form>
-
-      {/* Crop Modal */}
+      {/* Crop Dialog (Existing) */}
       <Dialog open={isCropping} onOpenChange={setIsCropping}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Ajustar Imagem</DialogTitle>
           </DialogHeader>
-          <div className="relative w-full h-80 bg-white mt-4">
+          <div className="relative h-[400px] w-full bg-secondary rounded-lg overflow-hidden">
             {cropImage && (
               <Cropper
                 image={cropImage}
                 crop={crop}
                 zoom={zoom}
-                aspect={cropField === "profileImage" ? 1 : 4 / 1}
+                aspect={cropField === "profileImage" ? 1 : 3 / 1}
                 onCropChange={setCrop}
                 onCropComplete={onCropComplete}
                 onZoomChange={setZoom}
               />
             )}
           </div>
-          <div className="py-4">
-            <label className="text-sm text-muted-foreground mb-2 block">
-              Zoom
-            </label>
-            <Slider
-              value={[zoom]}
-              min={1}
-              max={3}
-              step={0.1}
-              onValueChange={(value) => setZoom(value[0])}
-            />
+          <div className="space-y-4 py-4">
+            <div className="flex items-center gap-4">
+              <ZoomOut className="h-4 w-4" />
+              <Slider
+                value={[zoom]}
+                min={1}
+                max={3}
+                step={0.1}
+                onValueChange={([value]) => setZoom(value)}
+              />
+              <ZoomIn className="h-4 w-4" />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCropCancel}>
-              <X className="w-4 h-4 mr-2" />
+            <Button
+              variant="outline"
+              onClick={handleCropCancel}
+              disabled={isUploading}
+            >
               Cancelar
             </Button>
             <Button onClick={handleCropSave} disabled={isUploading}>
-              {isUploading ? (
-                "Salvando..."
-              ) : (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Salvar Imagem
-                </>
-              )}
+              {isUploading ? "Salvando..." : "Salvar Foto"}
             </Button>
           </DialogFooter>
         </DialogContent>

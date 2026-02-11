@@ -1,15 +1,7 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
-import { compare } from "bcryptjs";
-
-const connectionString = process.env.DATABASE_URL;
-
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import prisma from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export async function authenticateUser(email: string, password: string) {
   try {
@@ -24,7 +16,7 @@ export async function authenticateUser(email: string, password: string) {
       return { success: false, error: "User not found" };
     }
 
-    const isValid = await compare(password, user.password);
+    const isValid = await bcrypt.compare(password, user.password);
 
     if (!isValid) {
       return { success: false, error: "Invalid password" };

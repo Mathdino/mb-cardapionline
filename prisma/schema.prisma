@@ -21,6 +21,7 @@ model Company {
   address        Json
   businessHours  Json
   paymentMethods String[]
+  deliveryMethods String[]
   averagePreparationTime Int @default(40)
   isOpen         Boolean        @default(true)
   instagram      String?
@@ -177,6 +178,7 @@ model Order {
   total         Float
   status        String
   paymentMethod String
+  deliveryMethod String?
   notes         String?
   discount      Float?
   couponId      String?

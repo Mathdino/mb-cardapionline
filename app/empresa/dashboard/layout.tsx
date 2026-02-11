@@ -20,9 +20,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   if (!user) {
+    console.log("Usuário não encontrado no layout do dashboard, redirecionando...");
     router.push('/empresa')
     return null
   }
+
+  console.log("Renderizando DashboardLayout para o usuário:", user.email);
 
   return (
     <div className="min-h-screen bg-secondary/30 flex">
