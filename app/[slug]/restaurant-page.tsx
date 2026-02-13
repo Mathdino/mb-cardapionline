@@ -59,8 +59,9 @@ const RestaurantPage = ({
         <ProductList
           categories={filteredCategories}
           products={filteredProducts}
+          company={company}
           activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
+          onCategoryChange={handleCategoryClick}
           scrollTrigger={scrollTrigger}
         />
 

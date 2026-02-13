@@ -192,6 +192,7 @@ export function CartSheet({ company }: CartSheetProps) {
         ),
         selectedComplements: item.selectedComplements,
         removedIngredients: item.removedIngredients,
+        selectedPizzaBorder: item.selectedPizzaBorder?.name,
       }));
 
       // Create order in database
@@ -227,6 +228,8 @@ export function CartSheet({ company }: CartSheetProps) {
         if (item.selectedFlavor) message += ` (${item.selectedFlavor})`;
         if (item.selectedFlavors)
           message += ` (${item.selectedFlavors.join(", ")})`;
+        if (item.selectedPizzaBorder)
+          message += ` (Borda: ${item.selectedPizzaBorder})`;
         message += ` - ${formatCurrency(item.subtotal)}\n`;
         if (item.comboItems && item.comboItems.length > 0) {
           item.comboItems.forEach((ci) => (message += `  - ${ci}\n`));
@@ -411,6 +414,11 @@ export function CartSheet({ company }: CartSheetProps) {
                                   ))}
                                 </div>
                               )}
+                            {item.selectedPizzaBorder && (
+                              <p className="text-xs text-muted-foreground font-medium mt-1">
+                                Borda: {item.selectedPizzaBorder.name}
+                              </p>
+                            )}
                             <p className="text-sm font-semibold text-foreground mt-1">
                               {formatCurrency(item.subtotal)}
                             </p>

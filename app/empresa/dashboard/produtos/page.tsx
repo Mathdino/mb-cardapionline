@@ -23,14 +23,20 @@ import {
   X,
   ImageIcon,
   Loader2,
+  CircleDot,
+  Check,
+  ChevronDown,
+  Settings2,
 } from "lucide-react";
+import { updateCompany } from "@/app/actions/company";
+
 import { Button } from "@/components/ui/button";
 import { ImageCropper } from "@/components/client/image-cropper";
 import { FoodLoading } from "@/components/ui/food-loading";
 
 function ProdutosContent() {
   const searchParams = useSearchParams();
-  const { getCompany } = useAuth();
+  const { getCompany, updateCompanyData } = useAuth();
   const company = getCompany();
 
   const [products, setProducts] = useState<any[]>([]);
@@ -47,6 +53,69 @@ function ProdutosContent() {
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string | null>(null);
 
+  const [pizzaBorders, setPizzaBorders] = useState<any[]>(
+    company?.pizzaBorders || [],
+  );
+  const [isSavingBorders, setIsSavingBorders] = useState(false);
+  const [isBordersOpen, setIsBordersOpen] = useState(false);
+
+  useEffect(() => {
+    if (company?.pizzaBorders) {
+      setPizzaBorders(company.pizzaBorders);
+    }
+  }, [company?.pizzaBorders]);
+
+  const addPizzaBorder = () => {
+    setPizzaBorders((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), name: "", price: 0 },
+    ]);
+  };
+
+  const updatePizzaBorder = (
+    id: string,
+    field: "name" | "price",
+    value: string | number,
+  ) => {
+    setPizzaBorders((prev) =>
+      prev.map((border) =>
+        border.id === id ? { ...border, [field]: value } : border,
+      ),
+    );
+  };
+
+  const removePizzaBorder = (id: string) => {
+    setPizzaBorders((prev) => prev.filter((border) => border.id !== id));
+  };
+
+  const handleSaveBorders = async () => {
+    if (!company?.id) return;
+    setIsSavingBorders(true);
+    try {
+      // Garantir que os dados sejam serializáveis antes de enviar
+      const bordersToSave = JSON.parse(JSON.stringify(pizzaBorders));
+
+      const result = await updateCompany(company.id, {
+        pizzaBorders: bordersToSave,
+      });
+      if (result.success && result.company) {
+        updateCompanyData(result.company as any);
+        alert("Bordas salvas com sucesso!");
+      } else {
+        alert(`Erro ao salvar bordas: ${result.error}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert(
+        `Erro ao salvar bordas: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`,
+      );
+    } finally {
+      setIsSavingBorders(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -54,6 +123,7 @@ function ProdutosContent() {
     promotionalPrice: "",
     isPromotion: false,
     categoryId: "",
+    hasBorders: false,
     productType: "simple" as
       | "simple"
       | "flavors"
@@ -290,6 +360,7 @@ function ProdutosContent() {
         promotionalPrice: product.promotionalPrice?.toString() || "",
         isPromotion: product.isPromotion || false,
         categoryId: product.categoryId,
+        hasBorders: product.hasBorders || false,
         productType: product.productType as any,
         image: product.image,
         ingredients: product.ingredients || [],
@@ -370,6 +441,7 @@ function ProdutosContent() {
         complements: [],
         wholesaleMinQuantity: "10",
         wholesalePrice: "",
+        hasBorders: false,
       });
     }
     setIsModalOpen(true);
@@ -431,6 +503,7 @@ function ProdutosContent() {
         : null,
       isPromotion: formData.isPromotion,
       categoryId: formData.categoryId,
+      hasBorders: formData.hasBorders,
       productType: formData.productType,
       image: formData.image,
       ingredients: formData.ingredients,
@@ -567,6 +640,132 @@ function ProdutosContent() {
         </Button>
       </div>
 
+      {/* Pizza Borders Management Section - Minimalist & Collapsible */}
+      {company?.segment === "Pizzaria" && (
+        <div className="bg-card border rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+          <button
+            onClick={() => setIsBordersOpen(!isBordersOpen)}
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Settings2 className="h-4 w-4 text-primary" />
+              </div>
+              <div className="text-left">
+                <h2 className="text-sm font-bold text-foreground">
+                  Gerenciar Bordas de Pizza
+                </h2>
+                <p className="text-[11px] text-muted-foreground">
+                  {pizzaBorders.length}{" "}
+                  {pizzaBorders.length === 1
+                    ? "borda cadastrada"
+                    : "bordas cadastradas"}
+                </p>
+              </div>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                isBordersOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              isBordersOpen
+                ? "max-h-[2000px] border-t opacity-100"
+                : "max-h-0 opacity-0"
+            }`}
+          >
+            <div className="p-6 bg-muted/5">
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-xs text-muted-foreground">
+                  Configure as bordas que estarão disponíveis para seus produtos
+                  habilitados.
+                </p>
+                <Button
+                  onClick={handleSaveBorders}
+                  disabled={isSavingBorders}
+                  size="sm"
+                  className="h-8 text-xs"
+                >
+                  {isSavingBorders ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-3 w-3 mr-2" />
+                  )}
+                  Salvar Bordas
+                </Button>
+              </div>
+
+              {pizzaBorders.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  {pizzaBorders.map((border) => (
+                    <div
+                      key={border.id}
+                      className="flex items-center gap-3 p-3 bg-background border rounded-lg hover:border-primary/20 transition-all group"
+                    >
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="Nome da borda"
+                          value={border.name}
+                          onChange={(e) =>
+                            updatePizzaBorder(border.id, "name", e.target.value)
+                          }
+                          className="w-full bg-transparent border-none p-0 text-sm focus:ring-0 placeholder:text-muted-foreground/50 font-medium"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 border-l pl-3">
+                        <span className="text-xs text-muted-foreground font-medium">
+                          R$
+                        </span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0,00"
+                          value={border.price}
+                          onChange={(e) =>
+                            updatePizzaBorder(
+                              border.id,
+                              "price",
+                              parseFloat(e.target.value) || 0,
+                            )
+                          }
+                          className="w-16 bg-transparent border-none p-0 text-sm focus:ring-0 font-bold text-primary"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removePizzaBorder(border.id)}
+                        className="text-muted-foreground/40 hover:text-destructive transition-colors ml-1"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed mb-6">
+                  <p className="text-xs text-muted-foreground">
+                    Nenhuma borda cadastrada ainda.
+                  </p>
+                </div>
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addPizzaBorder}
+                className="w-full h-9 border-dashed text-xs hover:bg-primary/5 hover:text-primary transition-all"
+              >
+                <Plus className="h-3 w-3 mr-2" />
+                Adicionar Borda
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 bg-card border rounded-xl p-4">
         <div className="relative w-full md:flex-1">
@@ -619,7 +818,7 @@ function ProdutosContent() {
             {/* Image Section */}
             <div className="relative w-28 md:w-full h-auto md:h-48 bg-secondary flex-shrink-0">
               <Image
-                src={product.image}
+                src={product.image || "/sem-foto.png"}
                 alt={product.name}
                 fill
                 className="object-cover transition-transform group-hover:scale-105"
@@ -652,7 +851,8 @@ function ProdutosContent() {
                     {product.name}
                   </h3>
                   <div className="flex flex-col items-end flex-shrink-0">
-                    {product.productType === "combo" ? (
+                    {product.productType === "combo" ||
+                    product.productType === "flavors" ? (
                       <span className="font-bold text-primary whitespace-nowrap text-sm">
                         Variável
                       </span>
@@ -820,26 +1020,28 @@ function ProdutosContent() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Preço (R$)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          price: e.target.value,
-                        }))
-                      }
-                      className="w-full px-3 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                      required
-                    />
-                  </div>
+                  {formData.productType !== "flavors" && (
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Preço (R$)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.price}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            price: e.target.value,
+                          }))
+                        }
+                        className="w-full px-3 py-2 rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -866,6 +1068,29 @@ function ProdutosContent() {
                       ))}
                     </select>
                   </div>
+
+                  {company.segment === "Pizzaria" && (
+                    <div className="flex items-center gap-2 p-3 bg-secondary/50 rounded-lg border border-primary/20">
+                      <input
+                        type="checkbox"
+                        id="hasBorders"
+                        checked={!!formData.hasBorders}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            hasBorders: e.target.checked,
+                          }))
+                        }
+                        className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <label
+                        htmlFor="hasBorders"
+                        className="text-sm font-medium text-foreground cursor-pointer select-none"
+                      >
+                        Habilitar bordas para este produto
+                      </label>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
@@ -945,92 +1170,153 @@ function ProdutosContent() {
                     Tipo de Produto
                   </label>
                   <div className="flex flex-wrap gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="productType"
-                        value="simple"
-                        checked={formData.productType === "simple"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            productType: e.target.value as any,
-                          }))
-                        }
-                        className="text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-foreground">Simples</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="productType"
-                        value="flavors"
-                        checked={formData.productType === "flavors"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            productType: e.target.value as any,
-                          }))
-                        }
-                        className="text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-foreground">
-                        Com Sabores
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="productType"
-                        value="combo"
-                        checked={formData.productType === "combo"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            productType: e.target.value as any,
-                          }))
-                        }
-                        className="text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-foreground">
-                        por Quant.
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="productType"
-                        value="wholesale"
-                        checked={formData.productType === "wholesale"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            productType: e.target.value as any,
-                          }))
-                        }
-                        className="text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-foreground">Atacado</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="productType"
-                        value="complements"
-                        checked={formData.productType === "complements"}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            productType: e.target.value as any,
-                          }))
-                        }
-                        className="text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-foreground">
-                        Com Complementos
-                      </span>
-                    </label>
+                    {company.segment === "Pizzaria" ? (
+                      <>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="productType"
+                            value="simple"
+                            checked={formData.productType === "simple"}
+                            onChange={(e) => {
+                              const value = e.target.value as any;
+                              setFormData((prev) => ({
+                                ...prev,
+                                productType: value,
+                                price: value === "flavors" ? "0" : prev.price,
+                              }));
+                            }}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-foreground">
+                            Pizza Simples
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="productType"
+                            value="flavors"
+                            checked={formData.productType === "flavors"}
+                            onChange={(e) => {
+                              const value = e.target.value as any;
+                              setFormData((prev) => ({
+                                ...prev,
+                                productType: value,
+                                price: value === "flavors" ? "0" : prev.price,
+                              }));
+                            }}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-foreground">
+                            Pizza com Sabores
+                          </span>
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="productType"
+                            value="simple"
+                            checked={formData.productType === "simple"}
+                            onChange={(e) => {
+                              const value = e.target.value as any;
+                              setFormData((prev) => ({
+                                ...prev,
+                                productType: value,
+                                price: value === "flavors" ? "0" : prev.price,
+                              }));
+                            }}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-foreground">
+                            Simples
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="productType"
+                            value="flavors"
+                            checked={formData.productType === "flavors"}
+                            onChange={(e) => {
+                              const value = e.target.value as any;
+                              setFormData((prev) => ({
+                                ...prev,
+                                productType: value,
+                                price: value === "flavors" ? "0" : prev.price,
+                              }));
+                            }}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-foreground">
+                            Com Sabores
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="productType"
+                            value="combo"
+                            checked={formData.productType === "combo"}
+                            onChange={(e) => {
+                              const value = e.target.value as any;
+                              setFormData((prev) => ({
+                                ...prev,
+                                productType: value,
+                                price: value === "flavors" ? "0" : prev.price,
+                              }));
+                            }}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-foreground">
+                            por Quant.
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="productType"
+                            value="wholesale"
+                            checked={formData.productType === "wholesale"}
+                            onChange={(e) => {
+                              const value = e.target.value as any;
+                              setFormData((prev) => ({
+                                ...prev,
+                                productType: value,
+                                price: value === "flavors" ? "0" : prev.price,
+                              }));
+                            }}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-foreground">
+                            Atacado
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="productType"
+                            value="complements"
+                            checked={formData.productType === "complements"}
+                            onChange={(e) => {
+                              const value = e.target.value as any;
+                              setFormData((prev) => ({
+                                ...prev,
+                                productType: value,
+                                price: value === "flavors" ? "0" : prev.price,
+                              }));
+                            }}
+                            className="text-primary focus:ring-primary"
+                          />
+                          <span className="text-sm text-foreground">
+                            Com Complementos
+                          </span>
+                        </label>
+                      </>
+                    )}
                   </div>
                 </div>
 

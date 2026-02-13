@@ -24,7 +24,36 @@ import {
   Palette,
   CreditCard,
   ChevronRight,
+  Utensils,
+  IceCreamCone,
+  Pizza,
+  Croissant,
+  Fish,
+  CakeSlice,
+  Drumstick,
+  ChefHat,
+  LayoutGrid,
+  CircleDot,
 } from "lucide-react";
+
+// Ícone de Hambúrguer personalizado
+const BurgerIcon = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M7 11h10" />
+    <path d="M11 15h2" />
+    <path d="M12 3a8 8 0 0 1 8 8c0 .3-.1.6-.2.8-.2.6-.9 1.2-1.8 1.2H6c-.9 0-1.6-.6-1.8-1.2-.1-.2-.2-.5-.2-.8a8 8 0 0 1 8-8Z" />
+    <path d="M4 18c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-1c0-.6-.4-1-1-1H5c-.6 0-1 .4-1 1v1Z" />
+  </svg>
+);
+
 import { Button } from "@/components/ui/button";
 import { formatPhone, getCroppedImg } from "@/lib/utils";
 import { updateCompany, getCompanyById } from "@/app/actions/company";
@@ -40,6 +69,18 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { FoodLoading } from "@/components/ui/food-loading";
 
+const segments = [
+  { id: "Marmita", label: "Marmita", icon: Utensils },
+  { id: "Acai e Sorvete", label: "Açaí e Sorvete", icon: IceCreamCone },
+  { id: "Pizzaria", label: "Pizzaria", icon: Pizza },
+  { id: "Hamburgueria", label: "Hamburgueria", icon: BurgerIcon },
+  { id: "Pastelaria", label: "Pastelaria", icon: Croissant },
+  { id: "Japa", label: "Japa", icon: Fish },
+  { id: "Bolos e Doces", label: "Bolos e Doces", icon: CakeSlice },
+  { id: "Salgadinhos", label: "Salgadinhos", icon: Drumstick },
+  { id: "Outros", label: "Outros", icon: ChefHat },
+];
+
 export default function InformacoesPage() {
   const { getCompany, updateCompanyData } = useAuth();
   const company = getCompany();
@@ -52,6 +93,7 @@ export default function InformacoesPage() {
           description: company.description || "",
           instagram: company.instagram || "",
           facebook: company.facebook || "",
+          segment: company.segment || "",
           whatsapp: company.whatsapp || "",
           minimumOrder: company.minimumOrder || 0,
           averagePreparationTime: company.averagePreparationTime || 40,
@@ -74,6 +116,9 @@ export default function InformacoesPage() {
             company.businessHours.length > 0
               ? company.businessHours
               : defaultBusinessHours,
+          pizzaBorders: Array.isArray(company.pizzaBorders)
+            ? company.pizzaBorders
+            : [],
         }
       : null,
   );
@@ -92,6 +137,7 @@ export default function InformacoesPage() {
               description: typedCompany.description || "",
               instagram: typedCompany.instagram || "",
               facebook: typedCompany.facebook || "",
+              segment: typedCompany.segment || "",
               whatsapp: typedCompany.whatsapp || "",
               minimumOrder: typedCompany.minimumOrder || 0,
               averagePreparationTime: typedCompany.averagePreparationTime || 40,
@@ -116,6 +162,9 @@ export default function InformacoesPage() {
                 typedCompany.businessHours.length > 0
                   ? typedCompany.businessHours
                   : defaultBusinessHours,
+              pizzaBorders: Array.isArray(typedCompany.pizzaBorders)
+                ? typedCompany.pizzaBorders
+                : [],
             });
           }
         } catch (error) {
@@ -285,7 +334,10 @@ export default function InformacoesPage() {
         phone: formData!.phone.filter((p) => p.trim() !== ""),
       };
 
-      const result = await updateCompany(company.id, dataToSave);
+      const result = await updateCompany(company.id, {
+        segment: formData!.segment,
+        ...dataToSave,
+      });
 
       if (result.success && result.company) {
         updateCompanyData(result.company as unknown as Company);
@@ -294,7 +346,10 @@ export default function InformacoesPage() {
           text: "Informações salvas com sucesso!",
         });
       } else {
-        setMessage({ type: "error", text: "Erro ao salvar informações." });
+        setMessage({
+          type: "error",
+          text: result.error || "Erro ao salvar informações.",
+        });
       }
     } catch (error) {
       console.error(error);
@@ -447,6 +502,49 @@ export default function InformacoesPage() {
                   rows={4}
                   className="w-full px-4 py-2.5 rounded-lg border border-input bg-background resize-none"
                 />
+              </div>
+            </div>
+          ),
+        },
+        {
+          id: "segmento",
+          icon: LayoutGrid,
+          title: "Segmento",
+          description:
+            formData.segment || "Selecione o segmento do seu estabelecimento",
+          content: (
+            <div className="py-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {segments.map((s) => {
+                  const Icon = s.icon;
+                  const isSelected = formData.segment === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) =>
+                          prev ? { ...prev, segment: s.id } : null,
+                        )
+                      }
+                      className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all gap-2 ${
+                        isSelected
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-secondary bg-background text-muted-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      <Icon className="h-6 w-6" />
+                      <span className="text-xs font-medium text-center">
+                        {s.label}
+                      </span>
+                      {isSelected && (
+                        <div className="absolute top-2 right-2">
+                          <Check className="h-3 w-3" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ),

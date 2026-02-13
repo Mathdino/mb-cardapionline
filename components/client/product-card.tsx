@@ -36,7 +36,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
       {/* Product Image */}
       <div className="relative h-24 w-24 flex-shrink-0 rounded-lg overflow-hidden bg-secondary">
         <Image
-          src={product.image || "/placeholder.svg"}
+          src={product.image || "/sem-foto.png"}
           alt={product.name}
           fill
           className="object-cover"

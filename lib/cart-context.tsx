@@ -32,6 +32,7 @@ interface CartContextType {
     removedIngredients?: string[],
     selectedFlavors?: ProductFlavor[],
     selectedComplements?: SelectedComplementItem[],
+    selectedPizzaBorder?: PizzaBorder,
   ) => void;
   removeItem: (cartItemId: string) => void;
   updateQuantity: (cartItemId: string, quantity: number) => void;
@@ -112,6 +113,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removedIngredients?: string[],
       selectedFlavors?: ProductFlavor[],
       selectedComplements?: SelectedComplementItem[],
+      selectedPizzaBorder?: PizzaBorder,
     ) => {
       setItems((prev) => {
         const effectiveFlavors =
@@ -132,6 +134,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 item.selectedFlavors.every((f) =>
                   effectiveFlavors.some((ef) => ef.id === f.id),
                 ))) &&
+            // Compare pizza border
+            ((!item.selectedPizzaBorder && !selectedPizzaBorder) ||
+              (item.selectedPizzaBorder &&
+                selectedPizzaBorder &&
+                item.selectedPizzaBorder.id === selectedPizzaBorder.id)) &&
             // If it has combo items, we always add as new item for simplicity unless deep comparison
             !item.selectedComboItems &&
             !selectedComboItems &&
@@ -178,6 +185,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           });
         }
 
+        if (selectedPizzaBorder) {
+          modifiers += selectedPizzaBorder.price;
+        }
+
         if (existingIndex >= 0) {
           const updated = [...prev];
           const newQty = updated[existingIndex].quantity + quantity;
@@ -200,6 +211,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             selectedFlavors: effectiveFlavors,
             selectedComboItems,
             selectedComplements,
+            selectedPizzaBorder,
             removedIngredients,
             subtotal,
           },
@@ -257,6 +269,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
               item.selectedComplements.forEach((comp) => {
                 unitPrice += comp.price * comp.quantity;
               });
+            }
+
+            if (item.selectedPizzaBorder) {
+              unitPrice += item.selectedPizzaBorder.price;
             }
 
             return {
@@ -321,6 +337,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           item.selectedComplements.forEach((comp) => {
             message += `\n  - ${comp.quantity}x ${comp.name} (+${formatCurrency(comp.price * comp.quantity)})`;
           });
+        }
+
+        if (item.selectedPizzaBorder) {
+          message += `\n  *Borda:* ${item.selectedPizzaBorder.name} (+${formatCurrency(item.selectedPizzaBorder.price)})`;
         }
 
         message += ` - ${formatCurrency(item.subtotal)}\n`;

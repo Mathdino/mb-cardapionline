@@ -19,6 +19,7 @@ export async function createCompany(formData: FormData) {
         bannerImage: "/placeholder.jpg",
         phone: [],
         whatsapp: "",
+        segment: "Outros",
         minimumOrder: 0,
         address: {},
         businessHours: {},

@@ -8,6 +8,8 @@ import type {
   ProductFlavor,
   SelectedComboItem,
   SelectedComplementItem,
+  Company,
+  PizzaBorder,
 } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/lib/cart-context";
@@ -18,6 +20,7 @@ interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   products: Product[]; // List of all available products for resolving combo references
+  company: Company;
 }
 
 export function ProductModal({
@@ -25,9 +28,12 @@ export function ProductModal({
   isOpen,
   onClose,
   products = [],
+  company,
 }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [selectedFlavors, setSelectedFlavors] = useState<ProductFlavor[]>([]);
+  const [selectedPizzaBorder, setSelectedPizzaBorder] =
+    useState<PizzaBorder | null>(null);
   // GroupID -> ItemID -> Quantity
   const [comboSelections, setComboSelections] = useState<
     Record<string, Record<string, number>>
@@ -62,6 +68,7 @@ export function ProductModal({
       setComboSelections({});
       setComplementSelections({});
       setRemovedIngredients([]);
+      setSelectedPizzaBorder(null);
     }
   }, [product]);
 
@@ -157,6 +164,10 @@ export function ProductModal({
       });
     }
 
+    if (selectedPizzaBorder) {
+      price += selectedPizzaBorder.price;
+    }
+
     return price;
   };
 
@@ -197,6 +208,16 @@ export function ProductModal({
         const total = getComplementGroupTotalSelected(group.id);
         return total >= group.min && total <= group.max;
       });
+    }
+
+    if (
+      company.segment === "Pizzaria" &&
+      product.hasBorders &&
+      company.pizzaBorders &&
+      company.pizzaBorders.length > 0 &&
+      !selectedPizzaBorder
+    ) {
+      return false;
     }
 
     return true;
@@ -282,6 +303,7 @@ export function ProductModal({
       removedIngredients,
       selectedFlavors,
       selectedComplementItems.length > 0 ? selectedComplementItems : undefined,
+      selectedPizzaBorder || undefined,
     );
     onClose();
   };
@@ -380,7 +402,7 @@ export function ProductModal({
       <div className="flex-1 overflow-y-auto">
         <div className="relative h-64 w-full">
           <Image
-            src={product.image || "/placeholder.svg"}
+            src={product.image || "/sem-foto.png"}
             alt={product.name}
             fill
             className="object-cover"
@@ -539,6 +561,66 @@ export function ProductModal({
                   Compre {product.wholesaleMinQuantity} ou mais unidades e pague
                   apenas {formatCurrency(product.wholesalePrice)} cada.
                 </p>
+              </div>
+            )}
+
+          {/* Pizza Borders Selection */}
+          {company.segment === "Pizzaria" &&
+            product.hasBorders &&
+            company.pizzaBorders &&
+            company.pizzaBorders.length > 0 && (
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-foreground">
+                    Bordas de Pizza
+                  </h3>
+                  <span className="text-xs font-medium text-red-500 bg-red-50 px-2 py-0.5 rounded-full">
+                    Obrigatório
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {/* Option for "No Border" removed as it is mandatory */}
+
+                  {/* Registered Borders */}
+                  {company.pizzaBorders.map((border) => {
+                    const isSelected = selectedPizzaBorder?.id === border.id;
+                    return (
+                      <button
+                        key={border.id}
+                        onClick={() => setSelectedPizzaBorder(border)}
+                        className={`
+                          relative flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 text-left
+                          ${
+                            isSelected
+                              ? "border-primary bg-primary/5 shadow-sm"
+                              : "border-transparent bg-secondary/50 hover:bg-secondary hover:border-primary/20"
+                          }
+                        `}
+                      >
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {border.name}
+                          </p>
+                          <p className="text-sm text-primary font-bold mt-0.5">
+                            + {formatCurrency(border.price)}
+                          </p>
+                        </div>
+                        <div
+                          className={`
+                          flex items-center justify-center w-5 h-5 rounded-full border transition-colors
+                          ${
+                            isSelected
+                              ? "bg-primary border-primary text-primary-foreground"
+                              : "border-muted-foreground/30 bg-transparent"
+                          }
+                        `}
+                        >
+                          {isSelected && <Check className="w-3 h-3" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

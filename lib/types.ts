@@ -16,6 +16,8 @@ export interface Company {
   isOpen: boolean;
   instagram?: string;
   facebook?: string;
+  segment?: string;
+  pizzaBorders?: PizzaBorder[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -71,6 +73,7 @@ export interface Product {
   complements?: ComplementGroup[];
   comboConfig?: ComboConfig;
   ingredients?: string[];
+  hasBorders: boolean;
   wholesaleMinQuantity?: number;
   wholesalePrice?: number;
   isAvailable: boolean;
@@ -150,6 +153,7 @@ export interface OrderItem {
   comboItems?: string[];
   selectedComplements?: SelectedComplementItem[];
   removedIngredients?: string[];
+  selectedPizzaBorder?: string;
   subtotal: number;
 }
 
@@ -168,6 +172,12 @@ export interface SelectedComplementItem {
   quantity: number;
 }
 
+export interface PizzaBorder {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export interface CartItem {
   cartItemId: string;
   product: Product;
@@ -176,6 +186,7 @@ export interface CartItem {
   selectedFlavors?: ProductFlavor[]; // New field for multiple flavors
   selectedComboItems?: SelectedComboItem[];
   selectedComplements?: SelectedComplementItem[];
+  selectedPizzaBorder?: PizzaBorder;
   removedIngredients?: string[];
   subtotal: number;
 }

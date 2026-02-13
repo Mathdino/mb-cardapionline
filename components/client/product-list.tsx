@@ -2,13 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import type { Category, Product } from "@/lib/types";
+import type { Category, Product, Company } from "@/lib/types";
 import { ProductCard } from "./product-card";
 import { ProductModal } from "./product-modal";
 
 interface ProductListProps {
   categories: Category[];
   products: Product[];
+  company: Company;
   activeCategory: string;
   onCategoryChange: (categoryId: string) => void;
   scrollTrigger?: { id: string; ts: number } | null;
@@ -17,6 +18,7 @@ interface ProductListProps {
 export function ProductList({
   categories,
   products,
+  company,
   activeCategory,
   onCategoryChange,
   scrollTrigger,
@@ -131,6 +133,7 @@ export function ProductList({
         isOpen={!!selectedProduct}
         onClose={() => setSelectedProduct(null)}
         products={products}
+        company={company}
       />
     </>
   );
