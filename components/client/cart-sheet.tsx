@@ -6,12 +6,18 @@ import {
   Plus,
   Trash2,
   X,
-  MessageCircle,
   Loader2,
   MapPin,
-  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  TicketPercent,
+  User,
+  Phone,
+  Truck,
+  Store,
+  ShoppingBag,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
@@ -64,12 +70,17 @@ export function CartSheet({ company }: CartSheetProps) {
   });
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">(
+    company.allowsDelivery ? "delivery" : "pickup",
+  );
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasPrefilled, setHasPrefilled] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [showAllPayments, setShowAllPayments] = useState(false);
+  const [showCouponModal, setShowCouponModal] = useState(false);
   const { data: session } = useSession();
   const { user: authUser } = useAuth();
 
@@ -85,17 +96,32 @@ export function CartSheet({ company }: CartSheetProps) {
     clearCart,
     applyCoupon,
     removeCoupon,
-    getWhatsAppMessage,
   } = useCart();
+
+  const promoDiscount = useMemo(() => {
+    let d = 0;
+    items.forEach((item) => {
+      const hasPromotion =
+        item.product.isPromotion &&
+        item.product.promotionalPrice !== null &&
+        item.product.promotionalPrice !== undefined &&
+        item.product.promotionalPrice > 0;
+      if (hasPromotion) {
+        const diff = item.product.price - item.product.promotionalPrice!;
+        if (diff > 0) d += diff * item.quantity;
+      }
+    });
+    return d;
+  }, [items]);
 
   useEffect(() => {
     if (session?.user && !hasPrefilled) {
       setCustomerName(session.user.name || "");
       if (session.user.phone) {
-        setCustomerPhone(session.user.phone);
+        setCustomerPhone(formatPhone(session.user.phone));
       }
       if (session.user.cpf) {
-        setCustomerCpf(session.user.cpf);
+        setCustomerCpf(formatCPF(session.user.cpf));
       }
       if (session.user.address) {
         setDeliveryAddress({
@@ -111,10 +137,10 @@ export function CartSheet({ company }: CartSheetProps) {
     } else if (authUser && !hasPrefilled) {
       setCustomerName(authUser.name || "");
       if (authUser.phone) {
-        setCustomerPhone(authUser.phone);
+        setCustomerPhone(formatPhone(authUser.phone));
       }
       if (authUser.cpf) {
-        setCustomerCpf(authUser.cpf);
+        setCustomerCpf(formatCPF(authUser.cpf));
       }
       if (authUser.address) {
         setDeliveryAddress({
@@ -140,6 +166,7 @@ export function CartSheet({ company }: CartSheetProps) {
         alert(result.message || "Erro ao aplicar cupom");
       } else {
         setCouponCode("");
+        setShowCouponModal(false);
       }
     } catch (error) {
       console.error(error);
@@ -165,7 +192,10 @@ export function CartSheet({ company }: CartSheetProps) {
       return;
     }
 
-    if (!deliveryAddress.street || !deliveryAddress.number) {
+    if (
+      deliveryType === "delivery" &&
+      (!deliveryAddress.street || !deliveryAddress.number)
+    ) {
       alert("Por favor, informe o endereço de entrega (Rua e Número).");
       return;
     }
@@ -220,7 +250,11 @@ export function CartSheet({ company }: CartSheetProps) {
       message += `*Cliente:* ${customerName}\n`;
       message += `*Telefone:* ${customerPhone}\n`;
       if (customerCpf) message += `*CPF:* ${customerCpf}\n`;
-      message += `*Endereço:* ${deliveryAddress.street}, ${deliveryAddress.number} - ${deliveryAddress.neighborhood}\n\n`;
+      if (deliveryType === "delivery") {
+        message += `*Endereço:* ${deliveryAddress.street}, ${deliveryAddress.number} - ${deliveryAddress.neighborhood}\n\n`;
+      } else {
+        message += `*Tipo:* Retirada no Local\n\n`;
+      }
 
       message += `*Itens:*\n`;
       orderItems.forEach((item) => {
@@ -253,7 +287,14 @@ export function CartSheet({ company }: CartSheetProps) {
       message += `*Pagamento:* ${paymentMethodLabels[paymentMethod]}\n`;
       if (notes) message += `*Obs:* ${notes}\n`;
 
-      const whatsappUrl = `https://wa.me/${company.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+      const digits = (
+        company.whatsapp ||
+        (Array.isArray(company.phone) ? company.phone[0] : "") ||
+        ""
+      ).replace(/\D/g, "");
+      const whatsappUrl = `https://wa.me/${digits}?text=${encodeURIComponent(
+        message,
+      )}`;
 
       window.open(whatsappUrl, "_blank");
 
@@ -469,52 +510,6 @@ export function CartSheet({ company }: CartSheetProps) {
                 {/* Footer */}
                 {items.length > 0 && (
                   <div className="p-4 border-t bg-background">
-                    {/* Coupon Section */}
-                    <div className="mb-4">
-                      {coupon ? (
-                        <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-medium text-green-700 dark:text-green-400">
-                              Cupom aplicado
-                            </span>
-                            <span className="font-bold text-green-700 dark:text-green-400">
-                              {coupon.code}
-                            </span>
-                          </div>
-                          <button
-                            onClick={removeCoupon}
-                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            placeholder="Código do cupom"
-                            value={couponCode}
-                            onChange={(e) =>
-                              setCouponCode(e.target.value.toUpperCase())
-                            }
-                            className="flex-1 px-3 py-2 text-sm border rounded-lg bg-background uppercase"
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleApplyCoupon}
-                            disabled={!couponCode || isApplyingCoupon}
-                          >
-                            {isApplyingCoupon ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              "Aplicar"
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
                     <div className="space-y-1 mb-4">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Subtotal</span>
@@ -543,7 +538,10 @@ export function CartSheet({ company }: CartSheetProps) {
                     )}
 
                     <Button
-                      onClick={() => setShowCheckout(true)}
+                      onClick={() => {
+                        setIsOpen(false);
+                        setShowCheckout(true);
+                      }}
                       disabled={total < company.minimumOrder}
                       className="w-full h-12"
                     >
@@ -552,29 +550,41 @@ export function CartSheet({ company }: CartSheetProps) {
                   </div>
                 )}
               </>
-            ) : (
-              <>
-                {/* Checkout Form */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {/* Customer Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Seu nome
-                    </label>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {showCheckout && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="max-w-lg mx-auto w-full h-full flex flex-col">
+            <div className="flex items-center gap-2 p-4 border-b">
+              <button
+                className="p-2 rounded-full hover:bg-secondary"
+                onClick={() => setShowCheckout(false)}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-lg font-bold">Finalizar compra</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="rounded-2xl border bg-card p-4 space-y-3">
+                <h3 className="text-[18px] font-extrabold font-serif">
+                  Dados do cliente
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
                     <input
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      placeholder="Digite seu nome"
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="Seu nome"
+                      className="flex-1 px-4 py-3 rounded-lg border"
                     />
                   </div>
-
-                  {/* Customer Phone */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Seu telefone
-                    </label>
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-5 w-5 text-primary" />
                     <input
                       type="tel"
                       value={customerPhone}
@@ -583,220 +593,329 @@ export function CartSheet({ company }: CartSheetProps) {
                       }
                       placeholder="(99) 99999-9999"
                       maxLength={15}
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="flex-1 px-4 py-3 rounded-lg border"
                     />
-                  </div>
-
-                  {/* Customer CPF */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      CPF
-                    </label>
-                    <input
-                      type="text"
-                      value={customerCpf}
-                      onChange={(e) =>
-                        setCustomerCpf(formatCPF(e.target.value))
-                      }
-                      placeholder="000.000.000-00"
-                      maxLength={14}
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-
-                  {/* Delivery Address */}
-                  <div className="space-y-4 pt-2">
-                    <Card className="p-0 border-2 border-primary/10 overflow-hidden shadow-none">
-                      <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between bg-primary/5 space-y-0">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-5 w-5 text-primary" />
-                          <CardTitle className="text-base">
-                            Endereço de Entrega
-                          </CardTitle>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowAddressDialog(true)}
-                          className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10 gap-1"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          Alterar
-                        </Button>
-                      </CardHeader>
-                      <CardContent className="p-4">
-                        {deliveryAddress.street ? (
-                          <div className="space-y-1 text-sm">
-                            <p className="font-medium text-foreground">
-                              {deliveryAddress.street}, {deliveryAddress.number}
-                            </p>
-                            <p className="text-muted-foreground">
-                              {deliveryAddress.neighborhood}
-                            </p>
-                            <p className="text-muted-foreground">
-                              {deliveryAddress.city} - {deliveryAddress.state}
-                            </p>
-                            <p className="text-muted-foreground">
-                              CEP: {deliveryAddress.cep}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="py-2 text-center">
-                            <p className="text-sm text-muted-foreground italic mb-2">
-                              Nenhum endereço informado
-                            </p>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setShowAddressDialog(true)}
-                              className="w-full"
-                            >
-                              Adicionar Endereço
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Notes */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Observações
-                    </label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Ex: Tirar a cebola, troco para 50..."
-                      rows={3}
-                      className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                    />
-                  </div>
-
-                  {/* Payment Method */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Forma de pagamento
-                    </label>
-                    <div className="space-y-2">
-                      {company.paymentMethods.map((method) => (
-                        <button
-                          key={method}
-                          onClick={() => setPaymentMethod(method)}
-                          className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
-                            paymentMethod === method
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                        >
-                          <span className="font-medium text-foreground">
-                            {paymentMethodLabels[method]}
-                          </span>
-                          <div
-                            className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                              paymentMethod === method
-                                ? "border-primary"
-                                : "border-muted-foreground"
-                            }`}
-                          >
-                            {paymentMethod === method && (
-                              <div className="h-2.5 w-2.5 rounded-full bg-primary" />
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Order Summary */}
-                  <div className="border-t pt-4">
-                    <h3 className="font-semibold text-foreground mb-3">
-                      Resumo do pedido
-                    </h3>
-                    <div className="space-y-2 text-sm">
-                      {items.map((item, index) => (
-                        <div
-                          key={item.cartItemId}
-                          className="flex flex-col text-muted-foreground"
-                        >
-                          <div className="flex justify-between">
-                            <span>
-                              {item.quantity}x {item.product.name}
-                            </span>
-                            <span>{formatCurrency(item.subtotal)}</span>
-                          </div>
-                          {item.selectedFlavors &&
-                          item.selectedFlavors.length > 0 ? (
-                            <span className="text-xs pl-4">
-                              +{" "}
-                              {item.selectedFlavors
-                                .map((f) => f.name)
-                                .join(", ")}
-                            </span>
-                          ) : (
-                            item.selectedFlavor && (
-                              <span className="text-xs pl-4">
-                                + {item.selectedFlavor.name}
-                              </span>
-                            )
-                          )}
-                          {item.removedIngredients &&
-                            item.removedIngredients.length > 0 && (
-                              <span className="text-xs pl-4 text-red-500">
-                                Sem: {item.removedIngredients.join(", ")}
-                              </span>
-                            )}
-                          {item.selectedComboItems &&
-                            item.selectedComboItems.map((comboItem, i) => (
-                              <span key={i} className="text-xs pl-4">
-                                - {comboItem.quantity}x {comboItem.name}
-                              </span>
-                            ))}
-                          {item.selectedComplements &&
-                            item.selectedComplements.map((comp, i) => (
-                              <span key={i} className="text-xs pl-4">
-                                + {comp.quantity}x {comp.name}
-                              </span>
-                            ))}
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
-
-                {/* Checkout Footer */}
-                <div className="p-4 border-t bg-background">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-muted-foreground">Total</span>
+              </div>
+              {company.allowsDelivery && company.allowsPickup && (
+                <div className="rounded-2xl border bg-card p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShoppingBag className="h-5 w-5" />
+                    <span className="text-[18px] font-extrabold font-serif">
+                      Metódo de Entrega
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryType("delivery")}
+                      className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 ${
+                        deliveryType === "delivery"
+                          ? "border-brand bg-brand/15 text-primary"
+                          : "border-muted text-muted-foreground"
+                      }`}
+                    >
+                      <Truck className="h-5 w-5" />
+                      <span className="font-bold text-sm">Entrega</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryType("pickup")}
+                      className={`flex items-center justify-center gap-3 p-4 rounded-xl border-2 ${
+                        deliveryType === "pickup"
+                          ? "border-brand bg-brand/15 text-primary"
+                          : "border-muted text-muted-foreground"
+                      }`}
+                    >
+                      <Store className="h-5 w-5" />
+                      <span className="font-bold text-sm">Retirada</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div className="rounded-2xl border bg-card p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  <span className="text-[18px] font-extrabold font-serif">
+                    Endereço de entrega
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddressDialog(true)}
+                  className="w-full flex items-center justify-between rounded-lg border bg-background px-4 py-3"
+                >
+                  <div className="flex flex-col text-left">
+                    <span className="font-medium">
+                      {deliveryAddress.street && deliveryAddress.number
+                        ? `${deliveryAddress.street}, ${deliveryAddress.number}${
+                            deliveryAddress.neighborhood
+                              ? ` - ${deliveryAddress.neighborhood}`
+                              : ""
+                          }`
+                        : "Definir endereço"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Toque para editar
+                    </span>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="rounded-2xl border bg-card p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[18px] font-extrabold font-serif">
+                    Pagamento
+                  </h3>
+                  <button
+                    className="text-sm text-primary"
+                    onClick={() => setShowAllPayments((v) => !v)}
+                  >
+                    {showAllPayments ? "Ocultar" : "Ver tudo"}
+                  </button>
+                </div>
+                {!showAllPayments ? (
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">
+                      {paymentMethodLabels[paymentMethod]}
+                    </span>
+                    <div className="h-5 w-5 rounded-full border-2 border-brand flex items-center justify-center">
+                      <div className="h-2.5 w-2.5 rounded-full bg-brand" />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(Array.isArray(company.paymentMethods)
+                      ? company.paymentMethods
+                      : []
+                    ).map((method) => (
+                      <button
+                        key={method}
+                        onClick={() => {
+                          setPaymentMethod(method as PaymentMethod);
+                          setShowAllPayments(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                          paymentMethod === method
+                            ? "border-brand bg-brand/10"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <span className="font-medium text-foreground">
+                          {paymentMethodLabels[method]}
+                        </span>
+                        <div
+                          className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                            paymentMethod === method
+                              ? "border-brand"
+                              : "border-muted-foreground"
+                          }`}
+                        >
+                          {paymentMethod === method && (
+                            <div className="h-2.5 w-2.5 rounded-full bg-brand" />
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="rounded-2xl border bg-card p-4 space-y-3">
+                <h3 className="text-[18px] font-extrabold font-serif">
+                  Resumo do pedido
+                </h3>
+                {items.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-10 w-10 rounded-lg overflow-hidden bg-secondary">
+                      <Image
+                        src={items[0].product.image || "/placeholder.svg"}
+                        alt={items[0].product.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm text-muted-foreground">
+                        {items.length === 1
+                          ? "1 item"
+                          : `${items.length} itens`}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-2 text-sm">
+                  {items.map((item) => (
+                    <div
+                      key={item.cartItemId}
+                      className="flex justify-between gap-3"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="font-medium">
+                          {item.quantity}x {item.product.name}
+                        </div>
+                        {item.selectedFlavors &&
+                        item.selectedFlavors.length > 0 ? (
+                          <div className="text-xs text-muted-foreground">
+                            Sabores:{" "}
+                            {item.selectedFlavors.map((f) => f.name).join(", ")}
+                          </div>
+                        ) : (
+                          item.selectedFlavor && (
+                            <div className="text-xs text-muted-foreground">
+                              Sabor: {item.selectedFlavor.name}
+                            </div>
+                          )
+                        )}
+                        {item.selectedPizzaBorder && (
+                          <div className="text-xs text-muted-foreground">
+                            Borda: {item.selectedPizzaBorder.name}
+                          </div>
+                        )}
+                        {item.selectedComboItems &&
+                          item.selectedComboItems.length > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              {item.selectedComboItems.map((comboItem, i) => (
+                                <span key={i}>
+                                  {i > 0 ? " • " : ""}
+                                  {comboItem.quantity}x {comboItem.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        {item.selectedComplements &&
+                          item.selectedComplements.length > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              {item.selectedComplements.map((comp, i) => (
+                                <span key={i}>
+                                  {i > 0 ? " • " : ""}+ {comp.quantity}x{" "}
+                                  {comp.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        {item.removedIngredients &&
+                          item.removedIngredients.length > 0 && (
+                            <div className="text-xs text-red-500">
+                              Sem: {item.removedIngredients.join(", ")}
+                            </div>
+                          )}
+                      </div>
+                      <div className="text-right font-medium">
+                        {formatCurrency(item.subtotal)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl border bg-card p-4 space-y-3">
+                <h3 className="text-[18px] font-extrabold font-serif">
+                  Economize hoje
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCouponModal(true)}
+                  className="w-full flex items-center justify-between rounded-2xl bg-emerald-50 p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-emerald-500 text-white">
+                      <TicketPercent className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-emerald-700">
+                        Adicione um cupom
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-emerald-700" />
+                </button>
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                  {promoDiscount > 0 && (
+                    <div className="flex items-center justify-between text-emerald-600">
+                      <span>Promoções do cardápio</span>
+                      <span>-{formatCurrency(promoDiscount)}</span>
+                    </div>
+                  )}
+                  {coupon && (
+                    <div className="flex items-center justify-between text-emerald-600">
+                      <span>Cupom aplicado</span>
+                      <span>-{formatCurrency(discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">
+                      Taxa de entrega
+                    </span>
+                    <span>Grátis</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t mt-2">
+                    <span className="text-base font-bold text-foreground">
+                      Total
+                    </span>
                     <span className="text-xl font-bold text-foreground">
                       {formatCurrency(total)}
                     </span>
                   </div>
-
-                  <Button
-                    onClick={handleCheckout}
-                    disabled={
-                      !customerName.trim() ||
-                      !customerPhone.trim() ||
-                      isSubmitting
-                    }
-                    className="w-full h-12 gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Processando...
-                      </>
-                    ) : (
-                      <>
-                        <MessageCircle className="h-5 w-5" />
-                        Enviar pedido via WhatsApp
-                      </>
-                    )}
-                  </Button>
                 </div>
-              </>
-            )}
+              </div>
+              <div className="rounded-2xl border bg-card p-4 space-y-3">
+                <h3 className="text-[18px] font-extrabold font-serif">CPF</h3>
+                <input
+                  type="text"
+                  value={customerCpf}
+                  onChange={(e) => setCustomerCpf(formatCPF(e.target.value))}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  className="w-full px-4 py-3 rounded-lg border"
+                />
+              </div>
+              <div className="rounded-2xl border bg-card p-4 space-y-3">
+                <h3 className="text-[18px] font-extrabold font-serif">
+                  Informações adicionais
+                </h3>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Observações"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-lg border resize-none"
+                />
+              </div>
+              <div className="px-1 text-xs text-muted-foreground">
+                Este pedido é entregue pela loja. Ao tocar no botão de "pedir",
+                você concorda em fornecer seu nome, endereço e número de
+                telefone à loja para entrega.
+              </div>
+            </div>
+            <div className="p-4 border-t bg-background">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <div className="text-xl font-bold">
+                    {formatCurrency(total)}
+                  </div>
+                  <div className="text-xs text-green-600">
+                    {promoDiscount + discount > 0
+                      ? `Economizou ${formatCurrency(promoDiscount + discount)}`
+                      : ""}
+                  </div>
+                </div>
+                <button
+                  onClick={handleCheckout}
+                  disabled={
+                    !customerName.trim() ||
+                    !customerPhone.trim() ||
+                    isSubmitting
+                  }
+                  className="h-12 px-6 rounded-lg bg-brand text-white font-bold"
+                >
+                  {isSubmitting ? "Processando..." : "Pedir"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -947,6 +1066,46 @@ export function CartSheet({ company }: CartSheetProps) {
             >
               Confirmar Endereço
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showCouponModal} onOpenChange={setShowCouponModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar cupom</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="Código do cupom"
+              className="w-full px-4 py-3 rounded-lg border"
+            />
+            {coupon && (
+              <div className="text-sm text-emerald-700">
+                Cupom aplicado: {coupon.code} (-{formatCurrency(discount)})
+              </div>
+            )}
+          </div>
+          <DialogFooter className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={handleApplyCoupon}
+              disabled={isApplyingCoupon || !couponCode.trim()}
+            >
+              {isApplyingCoupon ? "Aplicando..." : "Aplicar cupom"}
+            </Button>
+            {coupon && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  removeCoupon();
+                  setShowCouponModal(false);
+                }}
+              >
+                Remover cupom
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
