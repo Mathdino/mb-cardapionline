@@ -17,6 +17,7 @@ export async function updateProfile(data: {
     neighborhood: string;
     city: string;
     state: string;
+    complement?: string;
   };
 }) {
   try {

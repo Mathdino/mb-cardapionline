@@ -63,6 +63,7 @@ export function CartSheet({ company }: CartSheetProps) {
   const [deliveryAddress, setDeliveryAddress] = useState({
     street: "",
     number: "",
+    complement: "",
     neighborhood: "",
     city: "",
     state: "",
@@ -127,6 +128,7 @@ export function CartSheet({ company }: CartSheetProps) {
         setDeliveryAddress({
           street: session.user.address.street || "",
           number: session.user.address.number || "",
+          complement: session.user.address.complement || "",
           neighborhood: session.user.address.neighborhood || "",
           city: session.user.address.city || "",
           state: session.user.address.state || "",
@@ -146,6 +148,7 @@ export function CartSheet({ company }: CartSheetProps) {
         setDeliveryAddress({
           street: authUser.address.street || "",
           number: authUser.address.number || "",
+          complement: authUser.address.complement || "",
           neighborhood: authUser.address.neighborhood || "",
           city: authUser.address.city || "",
           state: authUser.address.state || "",
@@ -251,7 +254,9 @@ export function CartSheet({ company }: CartSheetProps) {
       message += `*Telefone:* ${customerPhone}\n`;
       if (customerCpf) message += `*CPF:* ${customerCpf}\n`;
       if (deliveryType === "delivery") {
-        message += `*Endereço:* ${deliveryAddress.street}, ${deliveryAddress.number} - ${deliveryAddress.neighborhood}\n\n`;
+        message += `*Endereço:* ${deliveryAddress.street}, ${deliveryAddress.number}${
+          deliveryAddress.complement ? `, ${deliveryAddress.complement}` : ""
+        } - ${deliveryAddress.neighborhood}\n\n`;
       } else {
         message += `*Tipo:* Retirada no Local\n\n`;
       }
@@ -311,6 +316,7 @@ export function CartSheet({ company }: CartSheetProps) {
       setDeliveryAddress({
         street: "",
         number: "",
+        complement: "",
         neighborhood: "",
         city: "",
         state: "",
@@ -650,6 +656,10 @@ export function CartSheet({ company }: CartSheetProps) {
                     <span className="font-medium">
                       {deliveryAddress.street && deliveryAddress.number
                         ? `${deliveryAddress.street}, ${deliveryAddress.number}${
+                            deliveryAddress.complement
+                              ? `, ${deliveryAddress.complement}`
+                              : ""
+                          }${
                             deliveryAddress.neighborhood
                               ? ` - ${deliveryAddress.neighborhood}`
                               : ""
@@ -1017,6 +1027,25 @@ export function CartSheet({ company }: CartSheetProps) {
                     })
                   }
                   placeholder="123"
+                  className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Complemento
+                </label>
+                <input
+                  type="text"
+                  value={deliveryAddress.complement}
+                  onChange={(e) =>
+                    setDeliveryAddress({
+                      ...deliveryAddress,
+                      complement: e.target.value,
+                    })
+                  }
+                  placeholder="Apto, Bloco, Referência"
                   className="w-full px-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>

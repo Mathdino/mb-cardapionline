@@ -27,6 +27,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
       neighborhood: user.address?.neighborhood || "",
       city: user.address?.city || "",
       state: user.address?.state || "",
+      complement: user.address?.complement || "",
     },
   });
 
@@ -207,6 +208,16 @@ export function ProfileForm({ user }: ProfileFormProps) {
               name="number"
               value={formData.address.number}
               onChange={handleAddressChange}
+            />
+          </div>
+          <div>
+            <Label htmlFor="complement">Complemento</Label>
+            <Input
+              id="complement"
+              name="complement"
+              value={formData.address.complement}
+              onChange={handleAddressChange}
+              placeholder="Apto, Bloco, Referência"
             />
           </div>
           <div className="md:col-span-2">

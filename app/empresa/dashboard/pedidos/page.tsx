@@ -379,8 +379,11 @@ export default function PedidosPage() {
                       <p className="font-semibold">Endereço de Entrega:</p>
                       <p>
                         {selectedOrder.deliveryAddress.street},{" "}
-                        {selectedOrder.deliveryAddress.number} -{" "}
-                        {selectedOrder.deliveryAddress.neighborhood},{" "}
+                        {selectedOrder.deliveryAddress.number}
+                        {selectedOrder.deliveryAddress.complement
+                          ? `, ${selectedOrder.deliveryAddress.complement}`
+                          : ""}{" "}
+                        - {selectedOrder.deliveryAddress.neighborhood},{" "}
                         {selectedOrder.deliveryAddress.city} -{" "}
                         {selectedOrder.deliveryAddress.state},
                         {selectedOrder.deliveryAddress.cep}

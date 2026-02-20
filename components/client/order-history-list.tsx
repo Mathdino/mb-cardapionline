@@ -410,6 +410,9 @@ export function OrderHistoryList({ orders }: { orders: any[] }) {
                     <p className="text-muted-foreground">
                       {selectedOrder.deliveryAddress.street},{" "}
                       {selectedOrder.deliveryAddress.number}
+                      {selectedOrder.deliveryAddress.complement
+                        ? `, ${selectedOrder.deliveryAddress.complement}`
+                        : ""}
                     </p>
                     <p className="text-muted-foreground">
                       {selectedOrder.deliveryAddress.neighborhood} -{" "}
