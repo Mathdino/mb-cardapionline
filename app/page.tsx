@@ -2,7 +2,8 @@ import { getCompanies } from "@/app/actions/company";
 import { getCategories } from "@/app/actions/categories";
 import { getStoreProducts } from "@/app/actions/products";
 import RestaurantPage from "./[slug]/restaurant-page";
-import { SiteFooter } from "@/components/client/site-footer";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const companies = await getCompanies();

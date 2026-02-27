@@ -22,7 +22,7 @@ export async function getStoreProducts(companyId: string) {
   try {
     const now = new Date();
     const products = await prisma.product.findMany({
-      where: { companyId },
+      where: { companyId, isAvailable: true },
       include: {
         category: true,
         promotions: {

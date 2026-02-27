@@ -28,6 +28,7 @@ export function ProductList({
   >(Object.fromEntries(categories.map((c) => [c.id, true])));
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const suppressUntilRef = useRef<number>(0);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => ({
@@ -49,6 +50,7 @@ export function ProductList({
           top: offsetPosition,
           behavior: "smooth",
         });
+        suppressUntilRef.current = Date.now() + 800;
       }
     }
   }, [scrollTrigger]);
@@ -56,6 +58,7 @@ export function ProductList({
   // Update active category based on scroll position
   useEffect(() => {
     const handleScroll = () => {
+      if (Date.now() < suppressUntilRef.current) return;
       const scrollPosition = window.scrollY + 100; // Offset for sticky header
 
       for (const category of categories) {
