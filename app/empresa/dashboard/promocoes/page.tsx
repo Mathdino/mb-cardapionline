@@ -19,7 +19,7 @@ import {
   togglePromotionStatus,
 } from "@/app/actions/promotions";
 import type { Product, Promotion } from "@/lib/types";
-import { Plus, Pencil, Trash2, X, Tag, ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Tag, ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ImageCropper } from "@/components/client/image-cropper";
 import { FoodLoading } from "@/components/ui/food-loading";
